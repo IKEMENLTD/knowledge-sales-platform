@@ -1,0 +1,53 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    name: notify deploy (Slack)
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+
+      - name: Build commit summary
+        id: summary
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "subject=$(git log -1 --pretty=%s)" >> "$GITHUB_OUTPUT"
+          {
+            echo "diff<<EOF"
+            git log -10 --pretty="- %h %s (%an)"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Notify Slack (placeholder)
+        if: ${{ env.SLACK_RELEASE_WEBHOOK_URL != '' }}
+        env:
+          SLACK_RELEASE_WEBHOOK_URL: ${{ secrets.SLACK_RELEASE_WEBHOOK_URL }}
+          SUBJECT: ${{ steps.summary.outputs.subject }}
+          SHA: ${{ steps.summary.outputs.sha_short }}
+          DIFF: ${{ steps.summary.outputs.diff }}
+        run: |
+          if [ -z "${SLACK_RELEASE_WEBHOOK_URL}" ]; then
+            echo "::notice::SLACK_RELEASE_WEBHOOK_URL not set — skipping Slack notify"
+            exit 0
+          fi
+          payload=$(jq -nc \
+            --arg sha "$SHA" \
+            --arg subject "$SUBJECT" \
+            --arg diff "$DIFF" \
+            '{text: ":rocket: ksp deploy `\($sha)` \($subject)\n```\($diff)```"}')
+          curl -fsS -X POST -H "Content-type: application/json" \
+            -d "$payload" "$SLACK_RELEASE_WEBHOOK_URL"

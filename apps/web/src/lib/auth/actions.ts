@@ -3,24 +3,32 @@
 import { redirect } from 'next/navigation';
 import { env } from '@/lib/env';
 import { createServerClient } from '@/lib/supabase/server';
+import { sanitizeNext } from './redirect';
 
-const GOOGLE_SCOPES = [
+/**
+ * Phase1 の最小スコープ。Calendar.events だけ初期付与。
+ * Gmail / Drive 等は incremental authorization で「使う直前に追加同意」する (security/round1)。
+ */
+const GOOGLE_SCOPES_MIN = [
   'openid',
   'email',
   'profile',
-  'https://www.googleapis.com/auth/calendar',
   'https://www.googleapis.com/auth/calendar.events',
-  'https://www.googleapis.com/auth/gmail.readonly',
-  'https://www.googleapis.com/auth/gmail.send',
 ].join(' ');
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(formData?: FormData) {
+  const rawNext = formData?.get('next');
+  const next = sanitizeNext(typeof rawNext === 'string' ? rawNext : null);
+
   const supabase = await createServerClient();
+  const callbackUrl = new URL('/auth/callback', env.APP_URL);
+  callbackUrl.searchParams.set('next', next);
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${env.APP_URL}/auth/callback`,
-      scopes: GOOGLE_SCOPES,
+      redirectTo: callbackUrl.toString(),
+      scopes: GOOGLE_SCOPES_MIN,
       queryParams: {
         access_type: 'offline',
         prompt: 'consent',

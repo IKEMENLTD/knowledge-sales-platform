@@ -1,3 +1,35 @@
+// CSP は Supabase / R2 / Sentry を許可しつつ、initial scaffold は Report-Only で運用。
+// 本番運用時に違反レポートを `/api/csp-report` で集計後、Enforce に切替予定 (security/round1)。
+const ContentSecurityPolicyReportOnly = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https://*.supabase.co https://*.r2.cloudflarestorage.com",
+  "font-src 'self' data:",
+  "connect-src 'self' https://*.supabase.co https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io wss://*.supabase.co",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "object-src 'none'",
+  "report-uri /api/csp-report",
+].join('; ');
+
+const securityHeaders = [
+  {
+    key: 'Strict-Transport-Security',
+    value: 'max-age=63072000; includeSubDomains; preload',
+  },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  {
+    key: 'Permissions-Policy',
+    // 名刺スキャン (T-008) と将来の音声録画で camera/microphone は self のみ許可
+    value: 'camera=(self), microphone=(self), geolocation=(), payment=(), usb=()',
+  },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'Content-Security-Policy-Report-Only', value: ContentSecurityPolicyReportOnly },
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -13,6 +45,14 @@ const nextConfig = {
       { protocol: 'https', hostname: '**.supabase.co' },
       { protocol: 'https', hostname: '**.r2.cloudflarestorage.com' },
     ],
+  },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: securityHeaders,
+      },
+    ];
   },
 };
 

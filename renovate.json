@@ -1,0 +1,90 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommitTypeAll(chore)",
+    ":timezone(Asia/Tokyo)"
+  ],
+  "schedule": ["before 5am on monday"],
+  "labels": ["dependencies"],
+  "rangeStrategy": "bump",
+  "prHourlyLimit": 4,
+  "prConcurrentLimit": 8,
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 5am on monday"]
+  },
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "schedule": ["at any time"]
+  },
+  "packageRules": [
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions",
+      "schedule": ["before 5am on monday"]
+    },
+    {
+      "groupName": "TypeScript",
+      "matchPackageNames": ["typescript", "@types/node", "tsx", "ts-node"]
+    },
+    {
+      "groupName": "React / Next.js",
+      "matchPackageNames": [
+        "next",
+        "react",
+        "react-dom",
+        "@types/react",
+        "@types/react-dom"
+      ],
+      "matchPackagePrefixes": ["@next/"]
+    },
+    {
+      "groupName": "Drizzle",
+      "matchPackageNames": ["drizzle-orm", "drizzle-kit", "drizzle-zod"]
+    },
+    {
+      "groupName": "Supabase",
+      "matchPackagePrefixes": ["@supabase/"]
+    },
+    {
+      "groupName": "Hono",
+      "matchPackageNames": ["hono"],
+      "matchPackagePrefixes": ["@hono/"]
+    },
+    {
+      "groupName": "Test deps",
+      "matchPackageNames": [
+        "vitest",
+        "@vitest/coverage-v8",
+        "@playwright/test",
+        "playwright"
+      ]
+    },
+    {
+      "groupName": "Biome / Lint",
+      "matchPackageNames": ["@biomejs/biome", "biome"]
+    },
+    {
+      "groupName": "Sentry / OTel",
+      "matchPackagePrefixes": ["@sentry/", "@opentelemetry/"],
+      "matchPackageNames": ["prom-client"]
+    },
+    {
+      "matchDepTypes": ["devDependencies"],
+      "automerge": true,
+      "automergeType": "branch",
+      "matchUpdateTypes": ["patch", "minor"]
+    },
+    {
+      "matchDepTypes": ["dependencies"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": false
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "addLabels": ["major-update"],
+      "automerge": false
+    }
+  ]
+}

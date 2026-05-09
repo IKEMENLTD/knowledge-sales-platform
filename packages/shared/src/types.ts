@@ -37,3 +37,20 @@ export const generateEmbeddingsPayload = z.object({
   ),
 });
 export type GenerateEmbeddingsPayload = z.infer<typeof generateEmbeddingsPayload>;
+
+/**
+ * audit_logs.action enum.
+ * 08_security_rls 「audit_logs append-only / hash chain」設計に対応する操作カテゴリ。
+ * Round1 security レビュー (S-M-02) で audit chain 雛形を要求されたため scaffold。
+ */
+export const auditAction = z.enum([
+  'view',
+  'create',
+  'update',
+  'delete',
+  'share',
+  'export',
+  'login',
+  'admin_action',
+]);
+export type AuditAction = z.infer<typeof auditAction>;

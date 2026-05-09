@@ -1,50 +1,100 @@
-# Render.com サービス定義
-# Web (Next.js) + Background Worker (Hono) の2サービス構成
-# 環境変数は Render Dashboard で個別設定 (10_env_vars 準拠)
+# =============================================================================
+# Render.com サービス定義 — Knowledge Sales Platform
+# -----------------------------------------------------------------------------
+# 設計書 09_implementation_plan / 10_env_vars / 12_cost_estimate 準拠。
+#
+# 構成 (3 サービス):
+#   1) ksp-web      : Next.js (App Router, SSR + Server Actions)
+#   2) ksp-ingress  : Hono webhook 受信 (Zoom / Gmail Pub/Sub) — type: web
+#   3) ksp-worker   : pgmq consumer 常駐                       — type: worker
+#
+# ksp-ingress と ksp-worker は同 Hono コードベース。env `MODE` で起動分岐:
+#     MODE=ingress → 受信 HTTP サーバ起動 (port=$PORT)
+#     MODE=worker  → pgmq consumer のみ常駐
+#
+# autoDeploy: true は維持。ただし GitHub Actions の CI gate
+# (.github/workflows/ci.yml の check / sql-syntax / build) を通過した
+# commit のみ main に merge される運用とセット (branch protection 必須)。
+#
+# region:
+#   sales_platform_design_spec_v2 10_env_vars で SUPABASE_REGION=ap-northeast-1
+#   と整合させる。Render の `tokyo` (ap-northeast-1) が未対応の場合は
+#   `singapore` に fallback して個人情報越境の説明責任を docs/RUNBOOK.md に記載。
+# =============================================================================
 
 services:
-  # ----------------------------------------------------------------------------
-  # Web (Next.js 15)
-  # ----------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # 1) ksp-web — Next.js 15 (App Router)
+  # ---------------------------------------------------------------------------
   - type: web
     name: ksp-web
     runtime: node
-    region: singapore  # ap-northeast-1 (tokyo) 化したい場合は別途要相談
-    plan: starter
+    region: tokyo  # fallback: singapore (Render Tokyo region GA 待ちの場合)
+    plan: standard  # 12_cost_estimate 準拠。Starter は spin-down で SLA 達成不可
     branch: main
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @ksp/web build
     startCommand: pnpm --filter @ksp/web start
-    healthCheckPath: /
-    autoDeploy: true
+    healthCheckPath: /api/health  # 200 のみ ok 扱い (Next.js root は 307 リダイレクト)
+    autoDeploy: true  # CI gate (typecheck/build/sql-syntax) 通過後のみ main に merge される運用
     envVars:
       - key: NODE_ENV
         value: production
       - key: NODE_VERSION
-        value: 20.18.0
+        value: 20.18.0  # .nvmrc と一致
       - key: APP_URL
         sync: false
+      # ----- Supabase
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
       - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
-      - key: NEXTAUTH_SECRET
-        generateValue: true
+      - key: SUPABASE_REGION
+        value: ap-northeast-1
+      - key: DATABASE_URL
+        sync: false
+      # ----- Google OAuth (Auth callback は web 側)
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      # ----- Webhooks (rotation: current + previous の dual-secret 7 日窓)
+      - key: WEBHOOK_SECRET_GMAIL
+        sync: false
+      # ----- Observability
       - key: SENTRY_DSN
         sync: false
       - key: RESEND_API_KEY
         sync: false
+      # ----- App behavior
+      - key: SAMPLE_DATA_SEED
+        value: onboarding-seed-2026q2
+      - key: PITR_WINDOW_DAYS
+        value: "7"
+      - key: SOFT_DELETE_GRACE_DAYS
+        value: "30"
+      - key: DR_BACKUP_REGION
+        value: ap-northeast-3
+      - key: AB_HASH_SECRET
+        sync: false
+      - key: RATE_LIMIT_USER_RPM
+        value: "60"
+      - key: RATE_LIMIT_ADMIN_RPM
+        value: "10"
+      - key: MFA_REQUIRED_FOR_ROLES
+        value: admin,manager
 
-  # ----------------------------------------------------------------------------
-  # Worker (Hono background processor)
-  # Zoom Webhook 受信 + pgmq 消費 (T-009/012/013 etc)
-  # ----------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # 2) ksp-ingress — Hono Webhook 受信 (Zoom / Gmail Pub/Sub)
+  #    - 受信 → 署名検証 → idempotency check → pgmq.send → 200 即返し
+  #    - 重い処理は ksp-worker に流す
+  # ---------------------------------------------------------------------------
   - type: web
-    name: ksp-worker
+    name: ksp-ingress
     runtime: node
-    region: singapore
-    plan: starter
+    region: tokyo  # fallback: singapore
+    plan: standard
     branch: main
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @ksp/worker build
     startCommand: pnpm --filter @ksp/worker start
@@ -56,17 +106,19 @@ services:
       - key: NODE_VERSION
         value: 20.18.0
       - key: PORT
-        value: 8080
-      - key: DATABASE_URL
-        sync: false
+        value: "8080"
+      - key: MODE
+        value: ingress
+      # ----- Supabase
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
-      - key: ANTHROPIC_API_KEY
+      - key: SUPABASE_REGION
+        value: ap-northeast-1
+      - key: DATABASE_URL
         sync: false
-      - key: OPENAI_API_KEY
-        sync: false
+      # ----- Webhooks (current + 90日 rotation 中の previous)
       - key: ZOOM_ACCOUNT_ID
         sync: false
       - key: ZOOM_CLIENT_ID
@@ -75,6 +127,90 @@ services:
         sync: false
       - key: ZOOM_WEBHOOK_SECRET_TOKEN
         sync: false
+      - key: ZOOM_WEBHOOK_SECRET_TOKEN_PREVIOUS
+        sync: false
+      - key: WEBHOOK_SECRET_GMAIL
+        sync: false
+      # ----- Google (Pub/Sub Push 検証用)
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_PUBSUB_TOPIC
+        sync: false
+      # ----- Observability
+      - key: SENTRY_DSN
+        sync: false
+      - key: SLACK_ALERT_WEBHOOK_URL
+        sync: false
+      # ----- App behavior
+      - key: PGMQ_VISIBILITY_TIMEOUT_DEFAULT
+        value: "300"
+      - key: AB_HASH_SECRET
+        sync: false
+      - key: RATE_LIMIT_USER_RPM
+        value: "60"
+      - key: RATE_LIMIT_ADMIN_RPM
+        value: "10"
+      - key: MFA_REQUIRED_FOR_ROLES
+        value: admin,manager
+
+  # ---------------------------------------------------------------------------
+  # 3) ksp-worker — pgmq consumer (常駐 background worker)
+  #    - process_business_card / process_recording / generate_embeddings 等
+  #    - healthCheckPath は worker タイプで無効 (ingress 側に集約)
+  # ---------------------------------------------------------------------------
+  - type: worker
+    name: ksp-worker
+    runtime: node
+    region: tokyo  # fallback: singapore
+    plan: standard
+    branch: main
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @ksp/worker build
+    startCommand: pnpm --filter @ksp/worker start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: MODE
+        value: worker
+      # ----- Supabase
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_REGION
+        value: ap-northeast-1
+      - key: DATABASE_URL
+        sync: false
+      # ----- LLM
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      # ----- Zoom (recording download に必要)
+      - key: ZOOM_ACCOUNT_ID
+        sync: false
+      - key: ZOOM_CLIENT_ID
+        sync: false
+      - key: ZOOM_CLIENT_SECRET
+        sync: false
+      - key: ZOOM_WEBHOOK_SECRET_TOKEN
+        sync: false
+      - key: ZOOM_WEBHOOK_SECRET_TOKEN_PREVIOUS
+        sync: false
+      # ----- Google (Calendar freebusy / Gmail history)
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_PUBSUB_TOPIC
+        sync: false
+      - key: WEBHOOK_SECRET_GMAIL
+        sync: false
+      # ----- Cloudflare R2
       - key: R2_ACCOUNT_ID
         sync: false
       - key: R2_ACCESS_KEY_ID
@@ -82,10 +218,34 @@ services:
       - key: R2_SECRET_ACCESS_KEY
         sync: false
       - key: R2_BUCKET_RECORDINGS
+        value: ksp-recordings
+      - key: R2_BUCKET_REGION
+        value: tokyo
+      - key: R2_PUBLIC_DOMAIN
         sync: false
+      # ----- Observability / Notifications
       - key: SENTRY_DSN
         sync: false
       - key: SLACK_ALERT_WEBHOOK_URL
         sync: false
       - key: RESEND_API_KEY
         sync: false
+      # ----- App behavior
+      - key: PGMQ_VISIBILITY_TIMEOUT_DEFAULT
+        value: "300"
+      - key: SAMPLE_DATA_SEED
+        value: onboarding-seed-2026q2
+      - key: PITR_WINDOW_DAYS
+        value: "7"
+      - key: SOFT_DELETE_GRACE_DAYS
+        value: "30"
+      - key: DR_BACKUP_REGION
+        value: ap-northeast-3
+      - key: AB_HASH_SECRET
+        sync: false
+      - key: RATE_LIMIT_USER_RPM
+        value: "60"
+      - key: RATE_LIMIT_ADMIN_RPM
+        value: "10"
+      - key: MFA_REQUIRED_FOR_ROLES
+        value: admin,manager

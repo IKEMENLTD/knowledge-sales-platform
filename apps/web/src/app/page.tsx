@@ -1,8 +1,16 @@
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { env } from '@/lib/env';
 
 export default function HomePage() {
+  const isDev = env.NODE_ENV === 'development';
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-start justify-center gap-6 px-6 py-16">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="mx-auto flex min-h-dvh max-w-3xl flex-col items-start justify-center gap-6 px-6 py-16 outline-none"
+    >
       <div>
         <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
           Knowledge Sales Platform
@@ -10,35 +18,35 @@ export default function HomePage() {
         <h1 className="mt-2 text-4xl font-semibold tracking-tight">
           営業ナレッジ &amp; 商談アーカイブ
         </h1>
-        <p className="mt-4 text-base text-muted-foreground">
-          Phase 1 (Week 1-4) スキャフォールド構築済み。Supabase / Google OAuth /
-          Zoom連携の設定後、商談録画自動取込&検索のMVPが起動します。
+        <p className="mt-4 text-base text-muted-foreground max-w-xl">
+          名刺取込・商談録画・自動要約・横断検索を一つに。
+          会社のGoogleアカウントでサインインして、商談ナレッジの蓄積をはじめましょう。
         </p>
       </div>
 
-      <div className="flex gap-3">
-        <Link
-          href="/login"
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-        >
-          サインイン
-        </Link>
-        <Link
-          href="/dashboard"
-          className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
-        >
-          ダッシュボード
-        </Link>
+      <div className="flex flex-wrap gap-3">
+        <Button asChild>
+          <Link href="/login">サインイン</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/dashboard">ダッシュボードへ</Link>
+        </Button>
       </div>
 
-      <div className="mt-8 grid gap-4 text-sm text-muted-foreground">
-        <p>
-          📘 設計書: <code className="rounded bg-muted px-1.5 py-0.5">../営業、CS統合管理システム＿ナレッジさん/sales_platform_design_spec_v2.xlsx</code>
-        </p>
-        <p>
-          🚀 ロードマップ: <code className="rounded bg-muted px-1.5 py-0.5">README.md</code>
-        </p>
-      </div>
+      {isDev ? (
+        <div className="mt-8 grid gap-2 text-xs text-muted-foreground border-t border-border pt-4">
+          <p className="font-medium text-foreground">開発者向け</p>
+          <p>
+            設計書:{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5">
+              docs/spec/sales_platform_design_spec_v2.xlsx
+            </code>
+          </p>
+          <p>
+            ロードマップ: <code className="rounded bg-muted px-1.5 py-0.5">README.md</code>
+          </p>
+        </div>
+      ) : null}
     </main>
   );
 }

@@ -1,14 +1,6 @@
 import { sql } from 'drizzle-orm';
-import {
-  check,
-  date,
-  index,
-  integer,
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-} from 'drizzle-orm/pg-core';
+import { check, date, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { orgIdColumn } from './_shared.js';
 import { contacts } from './contacts.js';
 import { users } from './users.js';
 
@@ -40,6 +32,7 @@ export type DealStatus = (typeof dealStatus)[number];
 export const meetings = pgTable(
   'meetings',
   {
+    orgId: orgIdColumn(),
     id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     contactId: uuid('contact_id')
       .notNull()
@@ -61,19 +54,20 @@ export const meetings = pgTable(
     dealAmount: integer('deal_amount'),
     dealCloseDate: date('deal_close_date'),
     lostReason: text('lost_reason'),
+    /**
+     * contracts テーブルは P2 で導入される。FK は P2 T-031 で接続予定。
+     * P1 では型のみ uuid (FK 制約なし)。
+     */
     contractId: uuid('contract_id'),
-    createdAt: timestamp('created_at', { withTimezone: true })
-      .notNull()
-      .default(sql`now()`),
-    updatedAt: timestamp('updated_at', { withTimezone: true })
-      .notNull()
-      .default(sql`now()`),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().default(sql`now()`),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().default(sql`now()`),
   },
   (t) => ({
     scheduledIdx: index('meetings_scheduled_idx').on(t.scheduledAt),
     contactIdx: index('meetings_contact_idx').on(t.contactId),
     zoomIdx: index('meetings_zoom_idx').on(t.zoomMeetingId),
     ownerIdx: index('meetings_owner_idx').on(t.ownerUserId),
+    orgOwnerIdx: index('meetings_org_owner_idx').on(t.orgId, t.ownerUserId),
   }),
 );
 
@@ -86,6 +80,7 @@ export type AttendeeRole = (typeof attendeeRole)[number];
 export const meetingAttendees = pgTable(
   'meeting_attendees',
   {
+    orgId: orgIdColumn(),
     id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     meetingId: uuid('meeting_id')
       .notNull()
@@ -105,6 +100,11 @@ export const meetingAttendees = pgTable(
       )`,
     ),
     meetingIdx: index('meeting_attendees_meeting_idx').on(t.meetingId),
+    // 部分 index: NULL 行を除外して検索効率を上げる (A-M-04)
+    userIdx: index('meeting_attendees_user_idx').on(t.userId).where(sql`${t.userId} is not null`),
+    contactIdx: index('meeting_attendees_contact_idx')
+      .on(t.contactId)
+      .where(sql`${t.contactId} is not null`),
   }),
 );
 
