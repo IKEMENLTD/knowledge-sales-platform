@@ -1,0 +1,91 @@
+# Render.com サービス定義
+# Web (Next.js) + Background Worker (Hono) の2サービス構成
+# 環境変数は Render Dashboard で個別設定 (10_env_vars 準拠)
+
+services:
+  # ----------------------------------------------------------------------------
+  # Web (Next.js 15)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: ksp-web
+    runtime: node
+    region: singapore  # ap-northeast-1 (tokyo) 化したい場合は別途要相談
+    plan: starter
+    branch: main
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @ksp/web build
+    startCommand: pnpm --filter @ksp/web start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: APP_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: SENTRY_DSN
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+
+  # ----------------------------------------------------------------------------
+  # Worker (Hono background processor)
+  # Zoom Webhook 受信 + pgmq 消費 (T-009/012/013 etc)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: ksp-worker
+    runtime: node
+    region: singapore
+    plan: starter
+    branch: main
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @ksp/worker build
+    startCommand: pnpm --filter @ksp/worker start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: PORT
+        value: 8080
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ZOOM_ACCOUNT_ID
+        sync: false
+      - key: ZOOM_CLIENT_ID
+        sync: false
+      - key: ZOOM_CLIENT_SECRET
+        sync: false
+      - key: ZOOM_WEBHOOK_SECRET_TOKEN
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_RECORDINGS
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: SLACK_ALERT_WEBHOOK_URL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false

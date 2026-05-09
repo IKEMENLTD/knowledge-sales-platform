@@ -1,0 +1,28 @@
+{
+  "name": "knowledge-sales-platform",
+  "private": true,
+  "version": "0.1.0",
+  "description": "営業ナレッジ&商談アーカイブ・プラットフォーム (株式会社ナレッジホールディングス向け)",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:generate": "pnpm --filter @ksp/db drizzle-kit generate",
+    "db:migrate": "pnpm --filter @ksp/db drizzle-kit migrate",
+    "db:push": "pnpm --filter @ksp/db drizzle-kit push",
+    "db:studio": "pnpm --filter @ksp/db drizzle-kit studio",
+    "format": "biome format --write .",
+    "format:check": "biome format ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "turbo": "^2.3.0",
+    "typescript": "^5.6.3"
+  }
+}
