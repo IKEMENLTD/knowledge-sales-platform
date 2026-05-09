@@ -43,14 +43,22 @@ pnpm install
 3. ローカル `.env.local` に Project URL / anon key / service_role key / DATABASE_URL を投入
 
 ### 4. スキーマ適用
+DATABASE_URL を `.env.local` に設定して、Python スクリプトで一括適用:
 ```bash
-pnpm db:generate      # Drizzle スキーマから 0001_init.sql 自動生成
-pnpm db:migrate       # 0001_init.sql を Supabase に適用
-# その後、SQL Editor で以下を順に実行:
-#   0002_triggers_p1.sql       (updated_at trigger + HNSW index)
-#   0003_rls_p1.sql            (Row Level Security policies)
-#   0004_rpc_match_knowledge.sql (ベクトル検索 RPC)
-#   0005_auth_sync_trigger.sql (auth.users → public.users 同期)
+python scripts/apply_migrations.py
+```
+これで以下を順に流す（psycopg2 が必要、`pip install psycopg2-binary`）:
+- `0000_setup.sql` 拡張 + pgmq キュー
+- `0001_init_schema.sql` 全 10 テーブル
+- `0002_triggers_p1.sql` updated_at trigger + HNSW
+- `0003_rls_p1.sql` RLS policies
+- `0004_rpc_match_knowledge.sql` ベクトル検索 RPC
+- `0005_auth_sync_trigger.sql` auth.users → public.users 同期
+
+スキーマ更新時は Drizzle 経由でも可:
+```bash
+pnpm db:generate   # 新 migration 自動生成
+pnpm db:migrate    # 適用
 ```
 
 ### 5. Google OAuth 設定
