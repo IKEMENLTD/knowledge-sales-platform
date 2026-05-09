@@ -24,6 +24,15 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
+
+    /*
+     * 17_offline_mobile / 21_a11y_i18n: 片手UI handedness 切替の論理 token。
+     * 既定は右利き。<html data-handedness="left"> で左利きへ切替。
+     * 実 DB 連動 (users.handedness) は P1 W3 T-005a で接続予定。
+     */
+    --bottom-action-bar-justify: flex-end;
+    --bottom-action-bar-padding-inline-start: 1rem;
+    --bottom-action-bar-padding-inline-end: 1rem;
   }
 
   .dark {
@@ -79,6 +88,21 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+
+  /*
+   * 17_offline_mobile - 片手UI handedness 基盤。
+   * <html data-handedness="left"> で bottom_action_bar の主操作を左寄せにする。
+   * 各コンポーネントは var(--bottom-action-bar-justify) を参照する想定。
+   */
+  [data-handedness='left'] {
+    --bottom-action-bar-justify: flex-start;
+    --bottom-action-bar-padding-inline-start: 1rem;
+    --bottom-action-bar-padding-inline-end: 1rem;
+  }
+
+  [data-handedness='right'] {
+    --bottom-action-bar-justify: flex-end;
   }
 }
 

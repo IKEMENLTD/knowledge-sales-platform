@@ -49,14 +49,23 @@ export function idempotency(options: IdempotencyOptions = {}): MiddlewareHandler
     const method = c.req.method;
     const path = c.req.path;
     // body の hash は raw text から作る。Hono の `c.req.text()` は内部で
-    // body をキャッシュするので、後段ハンドラが `c.req.json()` を呼んでも
-    // 二重消費にはならない (Hono 4.6+ 挙動)。
+    // body をキャッシュするので後段ハンドラの `c.req.json()` は二重消費に
+    // ならない (Hono 4.6+ 挙動)。S2-M-01 の regression 対策として、
+    // 万一 stream 経路に落ちても安全に消費できるよう `c.req.raw.clone()` を
+    // fallback で読みに行く。
     let bodyText = '';
     if (method !== 'GET' && method !== 'HEAD') {
       try {
         bodyText = await c.req.text();
       } catch {
-        bodyText = '';
+        try {
+          // Hono 4.x の req.raw は Web Fetch Request。clone() してから読めば
+          // 後段の c.req.json() / c.req.text() を壊さない。
+          const rawClone = c.req.raw.clone();
+          bodyText = await rawClone.text();
+        } catch {
+          bodyText = '';
+        }
       }
     }
     const requestHash = hashRequest(method, path, bodyText);

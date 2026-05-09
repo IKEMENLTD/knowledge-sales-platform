@@ -67,9 +67,49 @@
 
 - **anon key**: `NEXT_PUBLIC_*` のみブラウザ露出。RLS 経由で読み書き
 - **service_role key**: worker 専用。Next.js Route Handler では禁止 (08_security_rls v2.1 hardening)
-- **Vault**: OAuth refresh_token / access_token は user_oauth_tokens.refresh_token_secret_id で参照、生trnsはVault側
-- **R2 署名URL**: expires ≤ 300s。メールクリック時に再発行
-- **Webhook secrets**: 90日ローテ (P2)、`ZOOM_WEBHOOK_SECRET_TOKEN` で署名検証
+- **Vault**: OAuth refresh_token / access_token は user_oauth_tokens.refresh_token_secret_id で参照、生tokenはVault側
+- **R2 署名URL**: expires ≤ 300s。メールクリック時に再発行 + GOVERNANCE Object Lock 7年
+- **Webhook secrets**: 90日 dual-window rotation (`ZOOM_WEBHOOK_SECRET_TOKEN` + `_PREVIOUS`)
+- **CSP / Permissions-Policy**: `next.config.mjs` で all path に適用、`/api/csp-report` で違反集計→Sentry forward
+- **Rate limit**: web `/api/*` 60rpm、worker webhook 30rpm/IP、in-memory token bucket
+- **users.role 変更**: 0015 trigger で admin のみ許可 (自己昇格防止)
+- **OAuth scope**: 初回サインインは Calendar.events のみ最小化、Gmail は P2 incremental authorization で追加同意
+
+## 監査チェーン (audit_logs)
+
+- 全業務イベントは `appendAudit({orgId, actorUserId, action, resourceType, resourceId, payload})` 経由で `audit_logs` に追記
+- BEFORE INSERT trigger `audit_logs_compute_hash()` が `prev_hash = 同 org の直前 row.row_hash` を引き、`row_hash = sha256(prev_hash | action | resource_type | resource_id | payload | created_at)` を計算
+- RLS で SELECT は manager/admin/legal のみ、`revoke insert,update,delete from authenticated, anon` で append-only 強制
+- 改ざん検知: `select ... order by id` で chain を再計算し DB の `row_hash` と突合 (定期 cron で WORM 比較、P2)
+
+## 共有リンク (share_links)
+
+- token 生成: `crypto.randomBytes(32).toString('base64url')` (URL に平文)
+- DB 保管: `token_sha256 = sha256(token)` のみ。平文は保存しない (L-6 準拠)
+- `password_hash` は argon2id (P2)、`ip_allowlist inet[]` で IP 制限可能
+- `expires_at` 必須、有効期限切れは Edge Function で即拒否
+- click 時に audit_logs に追記 + `click_count` インクリメント
+- 公開 endpoint は `apps/web/src/app/share/[token]/route.ts` (P2)、middleware の `PUBLIC_PREFIXES = ['/share/']` で auth 免除
+
+## Phase2 マルチテナント切替手順
+
+Phase 1 はシングルテナント運用 (default org_id `00000000-0000-0000-0000-000000000001`)。Phase 2 で複数 org 化する手順:
+
+1. **`current_org_id()` を fail-closed 化** (0026 で実施済み): `app.org_id` GUC 未設定時は NULL 返却
+2. **policy 句の二段ガード化**: 全 `using (org_id = current_org_id())` を `using (org_id = current_org_id() and current_org_id() is not null)` に書換 (新規 migration)
+3. **default DROP**: 全テーブルの `default '00000000-...-001'::uuid` を DROP (NOT NULL は維持)
+4. **`app.org_id` 強制**: middleware で `set_config('app.org_id', user.org_id, true)` を毎リクエスト発行 (`apps/web/src/lib/supabase/server.ts` で transaction-local)
+5. **audit_logs chain partition**: 既存の P1 期 chain は default org_id 配下に集約済み。P2 cutover 時は `select ... where org_id = '<new-org>' order by created_at` で **new org 単位の独立 chain** が始まる。cross-org の chain 連続性は意図的に切断する (org A の admin が org B の row を改ざんできない設計)。
+6. **`partial unique index`**: `audit_logs (org_id, id)` を新 org 単位の partition 化、`row_hash` を含む `chain_seq SERIAL` を `(org_id, chain_seq) UNIQUE` で振り直し (P2)。
+
+## 観測性
+
+- Sentry (web + worker)、release は `RENDER_GIT_COMMIT` 自動注入
+- request_id propagation: `x-request-id` ヘッダ + child logger + pgmq payload
+- Prometheus metrics (`/metrics`): jobs_processed_total / job_duration_seconds / pgmq_queue_depth / llm_tokens_total / llm_cost_usd_total / http_*
+- `/readyz`: DB+pgmq+R2+Sentry 並列ping、1.5sタイムアウト、503 返却
+- pgmq 詰まり: `pgmq.metrics()` を pg_cron で5分毎チェック → Slack alert (P2)
+- Anthropic tokens/sec: llm_usage_logs (P2) で集計
 
 ## 観測性
 

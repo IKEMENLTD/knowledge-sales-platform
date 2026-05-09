@@ -30,6 +30,28 @@ const securityHeaders = [
   { key: 'Content-Security-Policy-Report-Only', value: ContentSecurityPolicyReportOnly },
 ];
 
+/**
+ * Security/Round2 S-N-03: CORS allowlist を本番 URL のみに制限する。
+ * APP_URL (例: https://app.example.com) を allow し、それ以外は CORS を返さない。
+ * dev / preview ビルドでは APP_URL=http://localhost:3000 が設定される前提。
+ */
+const APP_URL = process.env.APP_URL ?? 'http://localhost:3000';
+
+const corsHeaders = [
+  { key: 'Access-Control-Allow-Origin', value: APP_URL },
+  { key: 'Vary', value: 'Origin' },
+  { key: 'Access-Control-Allow-Credentials', value: 'true' },
+  {
+    key: 'Access-Control-Allow-Methods',
+    value: 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+  },
+  {
+    key: 'Access-Control-Allow-Headers',
+    value: 'Content-Type, Authorization, X-Requested-With',
+  },
+  { key: 'Access-Control-Max-Age', value: '600' },
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -51,6 +73,12 @@ const nextConfig = {
       {
         source: '/:path*',
         headers: securityHeaders,
+      },
+      {
+        // /api/* に CORS allowlist を明示。Allow-Origin はワイルドカード禁止。
+        // /api/csp-report と /api/health は同 origin から呼ぶので影響しない。
+        source: '/api/:path*',
+        headers: corsHeaders,
       },
     ];
   },

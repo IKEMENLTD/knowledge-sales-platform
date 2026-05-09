@@ -35,15 +35,10 @@ export default function HomePage() {
 
       {isDev ? (
         <div className="mt-8 grid gap-2 text-xs text-muted-foreground border-t border-border pt-4">
-          <p className="font-medium text-foreground">開発者向け</p>
+          <p className="font-medium text-foreground">開発者向け (development only)</p>
           <p>
-            設計書:{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5">
-              docs/spec/sales_platform_design_spec_v2.xlsx
-            </code>
-          </p>
-          <p>
-            ロードマップ: <code className="rounded bg-muted px-1.5 py-0.5">README.md</code>
+            設計書 / ロードマップは社内リポジトリ内で管理しています。本番ビルド時はこのブロック自体が描画されません
+            (Security/Round2: 内部パス露出回避)。
           </p>
         </div>
       ) : null}

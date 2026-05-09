@@ -80,7 +80,16 @@ export function AppShell({
       {bottomActionBar ? (
         <div
           // 片手UI bottom_action_bar - 17_offline_mobile
-          className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t border-border bg-background/95 backdrop-blur px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+          //
+          // handedness 連動メモ:
+          // 主操作の左右寄せは globals.css の --bottom-action-bar-justify トークンで切替。
+          // ルート要素 (<html>) に data-handedness="left" or "right" を設定する想定で、
+          // 実際のユーザ設定との同期 (users.handedness 列 → SSR で <html> 属性) は
+          // P1 W3 T-005a (handedness toggle 設定 UI) で実装統合する。
+          // ここではユーティリティクラスではなく CSS var を使い、子コンポーネントが
+          // `style={{ justifyContent: 'var(--bottom-action-bar-justify)' }}` を取れる前提で配置。
+          className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t border-border bg-background/95 backdrop-blur px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center"
+          style={{ justifyContent: 'var(--bottom-action-bar-justify)' }}
           role="region"
           aria-label="モバイルアクションバー"
         >

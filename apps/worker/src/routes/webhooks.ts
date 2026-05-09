@@ -7,6 +7,19 @@ import { supabaseAdmin } from '../lib/supabase.js';
 import { captureException } from '../lib/sentry.js';
 import { logger } from '../lib/logger.js';
 import { rateLimitPerIp } from '../lib/rate-limit.js';
+import { appendAudit } from '../lib/audit.js';
+
+/**
+ * Phase1 シングルテナント DEFAULT_ORG_ID。
+ * worker から audit_logs / jobs_inflight に書く際の固定値。
+ */
+const DEFAULT_ORG_ID = '00000000-0000-0000-0000-000000000001';
+
+/**
+ * jobs_inflight TTL — Zoom recording.completed の処理が完了する想定上限。
+ * 30 分以内にどの worker も pickup できなかったら expire させ、再 enqueue を許す。
+ */
+const JOBS_INFLIGHT_TTL_MS = 30 * 60 * 1000;
 
 type RouteVariables = {
   reqId: string;
@@ -133,7 +146,38 @@ webhooks.post('/webhooks/zoom', async (c) => {
   const zoomRecordingUuid = obj.uuid;
 
   try {
-    // meetings: zoom_meeting_id を unique key として ON CONFLICT DO NOTHING。
+    // 7-a) jobs_inflight idempotency guard (S-N-01)
+    //   - (queue_name, idempotency_key) PK をユニークキーとして INSERT を試みる
+    //   - 23505 (unique violation) なら「同じ zoom_event を別のリクエストが既に
+    //     処理済 / 処理中」とみなし、重複として 200 no-op で返す
+    //   - DB アクセス自体に失敗した場合は throw 経路に流して 5xx で Zoom retry
+    const idemKey = `zoom:${zoomMeetingId}:${zoomRecordingUuid}`;
+    const inflightExpiresAt = new Date(Date.now() + JOBS_INFLIGHT_TTL_MS).toISOString();
+    const { error: inflightErr } = await supabaseAdmin
+      .from('jobs_inflight')
+      .insert({
+        org_id: DEFAULT_ORG_ID,
+        queue_name: 'process_recording',
+        idempotency_key: idemKey,
+        acquired_by: 'webhook:zoom',
+        expires_at: inflightExpiresAt,
+      });
+    if (inflightErr) {
+      if (inflightErr.code === '23505') {
+        reqLog.info(
+          { zoomMeetingId, zoomRecordingUuid },
+          'duplicate zoom recording.completed — already inflight, returning 200 no-op',
+        );
+        return c.json({ received: true, deduplicated: true });
+      }
+      // テーブル不在 (relation does not exist) などは soft-fail して enqueue は継続
+      reqLog.warn(
+        { err: inflightErr.message, code: inflightErr.code },
+        'jobs_inflight insert failed (continuing as best-effort)',
+      );
+    }
+
+    // 7-b) meetings: zoom_meeting_id を unique key として ON CONFLICT DO NOTHING。
     // NOTE: meetings.contact_id / owner_user_id は NOT NULL のため、本来は
     //       既に scheduling 済みの meeting レコードがある前提。無い場合は
     //       別途 reconcile job で contact/owner を後付けする (T-021 系)。
@@ -167,7 +211,7 @@ webhooks.post('/webhooks/zoom', async (c) => {
       }
     }
 
-    // pgmq enqueue: 本処理 (download → transcribe → embed) は worker consumer に委譲。
+    // 7-c) pgmq enqueue: 本処理 (download → transcribe → embed) は worker consumer に委譲。
     const reqId = c.get('reqId');
     await pgmqSend('process_recording', {
       zoomMeetingId,
@@ -176,6 +220,24 @@ webhooks.post('/webhooks/zoom', async (c) => {
       eventTs: parsed.data.event_ts ?? Date.now(),
       downloadToken: parsed.data.download_token,
       reqId,
+    });
+
+    // 7-d) audit_logs: webhook 受信成功を記録 (fire-and-forget)
+    void appendAudit({
+      orgId: DEFAULT_ORG_ID,
+      actorUserId: null,
+      action: 'create',
+      resourceType: 'meeting',
+      resourceId: meetingDbId,
+      payload: {
+        webhook: 'zoom.recording_completed',
+        zoomMeetingId,
+        zoomRecordingUuid,
+        eventTs: parsed.data.event_ts ?? null,
+        reqId,
+      },
+      ipAddress: ip === 'unknown' ? null : ip,
+      userAgent: c.req.header('user-agent') ?? null,
     });
   } catch (err) {
     captureException(err, { event: 'recording.completed', zoomMeetingId });

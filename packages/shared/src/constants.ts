@@ -33,6 +33,40 @@ export const CHUNK_TOKENS = 800 as const;
 export const CHUNK_OVERLAP = 100 as const;
 
 /**
+ * embedding source type — `knowledge_embeddings.source_type` SQL CHECK と
+ * Drizzle schema (knowledge.ts) の enum、shared/types.ts (zod) の 3 箇所で
+ * 同期する必要があるため、ここを single source of truth とする (A2-Mi-03)。
+ *
+ * SQL: 0001_init_schema.sql:181
+ * zod: shared/types.ts generateEmbeddingsPayload.sourceType
+ */
+export const embeddingSourceType = [
+  'knowledge_item',
+  'recording_segment',
+  'meeting_notes',
+  'email',
+  'handoff',
+] as const;
+export type EmbeddingSourceType = (typeof embeddingSourceType)[number];
+
+/**
+ * notification type — `notifications.type` の DB CHECK (0018) と Drizzle schema
+ * (notifications.ts) と worker / web からの直接 INSERT の 3 経路で同期させる
+ * source of truth (A2-Mi-03)。
+ *
+ * SQL: 0018_notifications_type_check.sql
+ */
+export const notificationType = [
+  'recording_ready',
+  'reply_received',
+  'handoff_pending',
+  'sync_failed',
+  'mention',
+  'admin_action',
+] as const;
+export type NotificationType = (typeof notificationType)[number];
+
+/**
  * Rate limit 設定。env から読みつつ default は constants で持つ。
  *
  * NOTE: SRE Round1 M6-2 指摘 — 「constants と env の二重情報源」を解消するため

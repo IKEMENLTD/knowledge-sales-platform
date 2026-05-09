@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { SubmitButton } from '@/components/ui/submit-button';
 import { signInWithGoogle } from '@/lib/auth/actions';
 import { sanitizeNext } from '@/lib/auth/redirect';
 
@@ -50,12 +50,17 @@ export default async function LoginPage({
 
           <form action={signInWithGoogle} className="space-y-3">
             <input type="hidden" name="next" value={safeNext} />
-            <Button type="submit" className="w-full" size="lg" aria-label="Googleでサインイン">
+            <SubmitButton
+              className="w-full"
+              size="lg"
+              aria-label="Googleでサインイン"
+              pendingLabel="サインイン中…"
+            >
               <span aria-hidden className="mr-2">
                 🔐
               </span>
               Google でサインイン
-            </Button>
+            </SubmitButton>
           </form>
 
           <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground space-y-2">

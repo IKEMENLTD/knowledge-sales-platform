@@ -28,7 +28,7 @@
                               └─────────┬───────────────┘
                                         │ ④ callback
                                         ▼
-                  https://arylptrsgxiwcnprzszo.supabase.co/auth/v1/callback
+                  https://<your-project-ref>.supabase.co/auth/v1/callback
                                         │ ⑤ token交換
                                         ▼
                               ┌─────────────────────────┐
@@ -80,7 +80,7 @@
    - ユーザーサポートメール: ナレッジHDの管理者メール
    - アプリのロゴ: 任意
    - アプリのドメイン:
-     - アプリのホームページ: 当面 `https://arylptrsgxiwcnprzszo.supabase.co` (本番デプロイ後にRenderのURLに変更)
+     - アプリのホームページ: 当面 `https://<your-project-ref>.supabase.co` (本番デプロイ後にRenderのURLに変更)
      - プライバシーポリシー / 利用規約: 任意（外部公開時は必須）
    - 承認済みドメイン: `supabase.co` を追加
    - デベロッパー連絡先: 自分のメール
@@ -109,12 +109,12 @@
 3. **名前**: `KSP Web Client` など分かりやすい名前
 4. **承認済みのJavaScript生成元**:
    ```
-   https://arylptrsgxiwcnprzszo.supabase.co
+   https://<your-project-ref>.supabase.co
    http://localhost:3000
    ```
 5. **承認済みのリダイレクトURI**: ⚠ ここがハマりポイント。**Supabase の Callback URL** を指定:
    ```
-   https://arylptrsgxiwcnprzszo.supabase.co/auth/v1/callback
+   https://<your-project-ref>.supabase.co/auth/v1/callback
    ```
    - ⚠ パスは `/auth/v1/callback` で、`/auth/callback` ではない（`/auth/callback`は我々のNext.js側のパス）
 6. **作成** をクリック → ダイアログが出て **Client ID** と **Client Secret** が表示される
@@ -146,7 +146,7 @@
    | Skip nonce check | OFF のまま (重要) |
 4. **Callback URL (for OAuth)** という項目がコピー可能な状態で表示されているはず。値は:
    ```
-   https://arylptrsgxiwcnprzszo.supabase.co/auth/v1/callback
+   https://<your-project-ref>.supabase.co/auth/v1/callback
    ```
    これは A-4 で Google 側に登録したものと**完全一致**している必要あり
 5. **Save** をクリック
@@ -221,10 +221,12 @@ Supabase Dashboard → **Table Editor → public.users** を開く
 ## トラブルシューティング
 
 ### ❌ "redirect_uri_mismatch" エラー
-- A-4 の **承認済みのリダイレクトURI** に `https://arylptrsgxiwcnprzszo.supabase.co/auth/v1/callback` を**完全一致**で入れたか確認
+- A-4 の **承認済みのリダイレクトURI** に `https://<your-project-ref>.supabase.co/auth/v1/callback` を**完全一致**で入れたか確認
 - 末尾スラッシュ `/` を入れると別物扱いされる
 - httpsとhttpを間違えてないか
-- Supabase project ref (`arylptrsgxiwcnprzszo`) のスペル
+- Supabase project ref のスペル
+
+> **ナレッジHD本番**: project ref は `arylptrsgxiwcnprzszo` (`.env.local` の `NEXT_PUBLIC_SUPABASE_URL` から取得可能)
 
 ### ❌ "scope not authorized" 系
 - A-3 の OAuth 同意画面で Calendar/Gmail スコープを **保存した** か確認（追加して保存しないと反映されない）

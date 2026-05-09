@@ -175,4 +175,34 @@ describe('idempotency middleware', () => {
     });
     expect(res2.status).toBe(409);
   });
+
+  /**
+   * S2-M-01 regression: middleware が body を text 消費した後でも、
+   * 後段 handler が `c.req.json()` を呼んで body を再消費できる必要がある。
+   * Hono 4.x は内部で body をキャッシュする想定だが、実装変更で破綻すると
+   * idempotency 配線の全 POST route が即死するため明示テスト。
+   */
+  it('lets downstream handler re-read JSON body after middleware consumed it', async () => {
+    const { idempotency } = await import('../lib/idempotency.js');
+    const app = new Hono();
+    app.use('*', idempotency());
+    app.post('/x', async (c) => {
+      const body = (await c.req.json()) as { a?: number };
+      return c.json({ echoedA: body.a ?? null });
+    });
+
+    const headers = {
+      'content-type': 'application/json',
+      'idempotency-key': 'reread-key',
+    };
+
+    const res = await app.request('/x', {
+      method: 'POST',
+      body: JSON.stringify({ a: 42 }),
+      headers,
+    });
+    expect(res.status).toBe(200);
+    const out = (await res.json()) as { echoedA: number | null };
+    expect(out.echoedA).toBe(42);
+  });
 });
