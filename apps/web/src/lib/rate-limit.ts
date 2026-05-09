@@ -6,7 +6,13 @@
  *   per-IP のスロットルを middleware で適用する。
  *
  * worker 側 (`apps/worker/src/lib/rate-limit.ts`) と同設計だが、別プロセスなので
- * バケットはここで独立保持する。Phase2 で Redis (Upstash) 化予定。
+ * バケットはここで独立保持する。
+ *
+ * P2 移行: Render が複数 dyno (multi-instance) 化する/Edge runtime にも展開する場合は
+ * Upstash Redis (HTTP API、edge-friendly) または Cloudflare KV/Durable Object へ
+ * 移行する。Token bucket の状態を共有しないと per-IP リミットがインスタンス毎に
+ * 緩くなる。移行時は本ファイルの `acquireToken()` を Promise 化して shared store
+ * (Upstash Redis の `INCR` + `EXPIRE`) に置換するだけで middleware 側は無改修で済む。
  *
  * NOTE: Edge runtime でも動くよう Node 固有 API は使わない。
  */

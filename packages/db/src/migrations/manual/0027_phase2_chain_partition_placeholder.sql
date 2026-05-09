@@ -1,0 +1,65 @@
+-- ============================================================================
+-- 0027_phase2_chain_partition_placeholder.sql
+--
+-- ⚠ PLACEHOLDER ONLY — Phase 2 マルチテナント切替時に **手動で実行する** 用の
+--    DDL テンプレート。Phase 1 シングルテナント運用では実行しない。
+--
+-- 背景 (Round 3 Security レビュー -1 解消):
+--   0008_audit_logs.sql で全テーブルが default org_id `00000000-...-0001` で動作中。
+--   Phase 2 で複数 org が混在した瞬間に、audit_logs hash chain は
+--   `where org_id = new.org_id order by created_at desc` で「P1 期に積まれた default
+--   org の chain」を P2 の別 org の chain と取り違える可能性がある (S2-H-01)。
+--
+--   Phase 2 切替手順 (docs/ARCHITECTURE.md「Phase2 マルチテナント切替手順」と整合):
+--     1. middleware で `set_config('app.org_id', user.org_id, true)` 強制
+--     2. policy 句を `org_id = current_org_id() and current_org_id() is not null` に二段化
+--     3. 全テーブルの default org_id を DROP (本ファイル)
+--     4. (オプション) audit_logs に `chain_seq SERIAL` 追加し `(org_id, chain_seq) UNIQUE`
+--
+-- 本ファイルは apply_migrations.py では **実行しない** こと。Phase 2 cutover の
+-- runbook で人間が `--only 0027_phase2_chain_partition_placeholder.sql` で叩く。
+-- ============================================================================
+
+-- ⚠ 以下は Phase 2 切替時に有効化する DDL テンプレート。今は全部コメントアウト。
+
+-- step 3-1: 全テーブルの default org_id を DROP
+-- alter table public.users                  alter column org_id drop default;
+-- alter table public.user_oauth_tokens      alter column org_id drop default;
+-- alter table public.companies              alter column org_id drop default;
+-- alter table public.contacts               alter column org_id drop default;
+-- alter table public.contact_duplicates     alter column org_id drop default;
+-- alter table public.meetings               alter column org_id drop default;
+-- alter table public.meeting_attendees      alter column org_id drop default;
+-- alter table public.recordings             alter column org_id drop default;
+-- alter table public.recording_segments     alter column org_id drop default;
+-- alter table public.recording_stages       alter column org_id drop default;
+-- alter table public.knowledge_embeddings   alter column org_id drop default;
+-- alter table public.notifications          alter column org_id drop default;
+-- alter table public.audit_logs             alter column org_id drop default;
+-- alter table public.idempotency_keys       alter column org_id drop default;
+-- alter table public.feature_flags          alter column org_id drop default;
+-- alter table public.ab_test_assignments    alter column org_id drop default;
+-- alter table public.business_card_images   alter column org_id drop default;
+-- alter table public.contact_memos          alter column org_id drop default;
+-- alter table public.offline_queue          alter column org_id drop default;
+-- alter table public.non_card_attachments   alter column org_id drop default;
+-- alter table public.sync_failure_log       alter column org_id drop default;
+-- alter table public.data_residency_config  alter column org_id drop default;
+-- alter table public.recent_views           alter column org_id drop default;
+-- alter table public.autosave_drafts        alter column org_id drop default;
+-- alter table public.share_links            alter column org_id drop default;
+-- alter table public.sample_data_seeds      alter column org_id drop default;
+-- alter table public.jobs_inflight          alter column org_id drop default;
+
+-- step 3-2: policy 句に `current_org_id() is not null` 二段ガード化 (例)
+-- alter policy contacts_select_all on public.contacts using (
+--   org_id = public.current_org_id() and public.current_org_id() is not null
+-- );
+
+-- step 4: audit_logs chain partition (オプション)
+-- alter table public.audit_logs add column chain_seq bigint;
+-- create unique index audit_logs_org_chain_uq on public.audit_logs (org_id, chain_seq);
+-- ... + trigger 改修で chain_seq を org 単位の SERIAL として振る
+
+-- ⚠ 何も実行しない (placeholder)。
+select 1 as phase2_placeholder_noop;
