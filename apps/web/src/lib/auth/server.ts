@@ -65,14 +65,14 @@ export async function requireUser(options?: { role?: UserRole }): Promise<AppUse
     // onboarded_at 列がまだ無い環境でも落ちないよう、まず onboarded_at 込みで試す。
     const { data, error } = await supabase
       .from('users')
-      .select('role,is_active,full_name,onboarded_at')
+      .select('role,is_active,name,onboarded_at')
       .eq('id', user.id)
       .maybeSingle();
 
     if (!error && data) {
       role = ((data as Record<string, unknown>).role as UserRole) ?? 'sales';
       isActive = ((data as Record<string, unknown>).is_active as boolean | null) ?? true;
-      fullName = ((data as Record<string, unknown>).full_name as string | null) ?? fullName;
+      fullName = ((data as Record<string, unknown>).name as string | null) ?? fullName;
       const rawOnboardedAt = (data as Record<string, unknown>).onboarded_at;
       if (typeof rawOnboardedAt === 'string') {
         const parsed = new Date(rawOnboardedAt);
@@ -86,13 +86,13 @@ export async function requireUser(options?: { role?: UserRole }): Promise<AppUse
       // onboarded_at 列が無い (42703 undefined_column 等) 場合は最小列で再試行。
       const fallback = await supabase
         .from('users')
-        .select('role,is_active,full_name')
+        .select('role,is_active,name')
         .eq('id', user.id)
         .maybeSingle();
       if (!fallback.error && fallback.data) {
         role = (fallback.data.role as UserRole) ?? 'sales';
         isActive = fallback.data.is_active ?? true;
-        fullName = (fallback.data.full_name as string | null) ?? fullName;
+        fullName = (fallback.data.name as string | null) ?? fullName;
       }
     }
   } catch {

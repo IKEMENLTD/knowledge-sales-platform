@@ -1,5 +1,7 @@
-import { Calendar, Check, Database, FileText } from 'lucide-react';
+import { ArrowRight, Calendar, Check, Database, FileText } from 'lucide-react';
 import { PagePlaceholder } from '@/components/layout/placeholder';
+import { SubmitButton } from '@/components/ui/submit-button';
+import { completeOnboarding } from '@/lib/auth/onboarding';
 
 export const metadata = { title: 'はじめての設定' };
 
@@ -58,6 +60,19 @@ export default function OnboardingPage() {
           </li>
         ))}
       </ol>
+
+      {/* 完了ボタン — Phase1 W1 では「触ってみる」のために用意した最小フロー。
+          実機能 (各ステップごとの consent_logs / Calendar incremental auth / sample データ起動)
+          は Phase1 W2-W3 で T-005a / T-018 と統合する。 */}
+      <form action={completeOnboarding} className="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-6 border-t border-border/60">
+        <p className="text-xs text-muted-foreground">
+          ※ Phase1 開発中は仮の「完了」ボタンです。本実装ではここで利用規約・カレンダー連携の正式手続きに進みます。
+        </p>
+        <SubmitButton type="submit" variant="cinnabar" size="lg" pendingLabel="完了処理中…">
+          ホームへ進む
+          <ArrowRight aria-hidden className="size-4" />
+        </SubmitButton>
+      </form>
     </PagePlaceholder>
   );
 }
