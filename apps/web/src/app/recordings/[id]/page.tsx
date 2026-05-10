@@ -1,6 +1,6 @@
 import { PagePlaceholder } from '@/components/layout/placeholder';
 
-export const metadata = { title: '録画詳細' };
+export const metadata = { title: '録画の詳細' };
 
 export default async function RecordingDetailPage({
   params,
@@ -11,14 +11,12 @@ export default async function RecordingDetailPage({
   return (
     <PagePlaceholder
       scCode="SC-16"
-      title="録画詳細"
-      description="録画動画のプレビューと、タイムスタンプ付きの文字起こしを並列表示します。"
-      helpText={[
-        `Recording ID: ${id}`,
-        '左ペイン: 動画プレイヤー (チャプター対応)。右ペイン: 文字起こし (話者分離 / クリックで該当時間にシーク)。',
-        '下部: AI 要約・アクションアイテム・関連ナレッジ候補。',
-        '権限: 同一 organization の admin / manager と参加者本人のみ閲覧可。',
-      ].join('\n\n')}
+      kicker="営業 / 録画"
+      title="商談の中身を、再生しながら掴む。"
+      description="動画と文字起こしを同期再生。気になる発言から、その場面までジャンプできます。"
+      helpText={`録画 ID: ${id}
+発言者ごとの色分けと感情カーブで、商談の山場が一目で分かります。
+社内向け / 社外向けで「ここからここまで」を切り出して、安全に共有できます (公開リンクは時限・閲覧制限つき)。`}
     />
   );
 }

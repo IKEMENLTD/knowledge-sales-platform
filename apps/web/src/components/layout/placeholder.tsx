@@ -1,45 +1,69 @@
 import type { ReactNode } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 /**
- * Phase1 W1 でまだ実装が無い画面用の共通プレースホルダー。
- * 設計書 02_screens の SC コードと、関連 task (T-XX) を明示する。
+ * Editorial placeholder for未実装画面。
+ *  - SC/T コードは data-* 属性のみ。UI 表示はしない (営業マンに見せる必要無し)
+ *  - "もうすぐ使えます" コピーで brand voice 統一
+ *  - kicker (№ + 部門) + display title + hairline で editorial feel
+ *  - children で個別 CTA を追加可能
  */
 export function PagePlaceholder({
   scCode,
   taskCode,
   title,
+  kicker,
   description,
   helpText,
+  comingSoonNote,
   children,
 }: {
   scCode: string;
   taskCode?: string;
   title: string;
+  /** "営業 / 名刺" のような editorial kicker */
+  kicker: string;
   description: string;
   helpText: string;
+  /** "もうすぐ使えます" の代わりに使いたい場合 */
+  comingSoonNote?: string;
   children?: ReactNode;
 }) {
+  const sectionNo = scCode.replace(/^SC-?/, '').padStart(2, '0');
   return (
-    <div className="space-y-6">
-      <header>
-        <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-          {scCode}
-          {taskCode ? ` / ${taskCode}` : ''}
+    <div
+      className="space-y-8 max-w-3xl mx-auto"
+      data-sc-code={scCode}
+      data-task-code={taskCode}
+    >
+      <header className="space-y-3 animate-fade-up">
+        <p className="kicker">
+          № {sectionNo} — {kicker}
         </p>
-        <h1 className="mt-1 text-2xl md:text-3xl font-semibold tracking-tight">{title}</h1>
-        <p className="mt-2 text-sm text-muted-foreground max-w-2xl">{description}</p>
+        <h1 className="display text-3xl md:text-4xl font-semibold tracking-crisp text-balance">
+          {title}
+        </h1>
+        <p className="text-base leading-relaxed text-muted-foreground max-w-prose">
+          {description}
+        </p>
       </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>このページについて</CardTitle>
-          <CardDescription>Phase1 進行中・近日公開予定</CardDescription>
+      <div className="hairline" aria-hidden />
+
+      <Card className="animate-fade-up [animation-delay:60ms]">
+        <CardHeader className="flex-row items-baseline justify-between gap-3">
+          <CardTitle>もうすぐ使えます</CardTitle>
+          <span className="kicker shrink-0">準備中</span>
         </CardHeader>
         <CardContent>
-          <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
+          <p className="text-sm md:text-[0.95rem] leading-7 text-foreground/80 whitespace-pre-line">
             {helpText}
           </p>
+          {comingSoonNote ? (
+            <p className="mt-4 text-xs text-muted-foreground border-l-2 border-cinnabar/60 pl-3 py-1">
+              {comingSoonNote}
+            </p>
+          ) : null}
           {children}
         </CardContent>
       </Card>

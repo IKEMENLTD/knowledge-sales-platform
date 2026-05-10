@@ -1,26 +1,30 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { Logo } from '@/components/brand/logo';
 import { signOut } from '@/lib/auth/actions';
 import type { AppUser } from '@/lib/auth/server';
 import { HeaderNav, type NavItem } from './header-nav';
+import { MobileBottomNav } from './mobile-bottom-nav';
+import { SignOutButton } from './signout-button';
 
 const NAV_ITEMS: NavItem[] = [
-  { href: '/dashboard', label: 'ダッシュボード' },
-  { href: '/contacts/import', label: '名刺取込' },
+  { href: '/dashboard', label: 'ホーム' },
+  { href: '/contacts/import', label: '名刺' },
   { href: '/meetings', label: '商談' },
   { href: '/recordings', label: '録画' },
   { href: '/search', label: '検索' },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [
-  { href: '/admin/users', label: 'ユーザ管理', requireRole: 'admin' },
+  { href: '/admin/users', label: 'メンバー', requireRole: 'admin' },
 ];
 
 /**
- * 認証済み画面の共通シェル。
- * - ヘッダー: ロゴ / ナビ / ユーザメニュー (signout)
- * - main#main-content: skip-link 受け
- * - bottomActionBar slot: 17_offline_mobile の片手UI bottom_action_bar 用 (モバイル)
+ * Editorial app shell.
+ *  - sticky header + cream paper background
+ *  - safe-area-inset-top で notch 配慮
+ *  - HeaderNav (md+) + MobileBottomNav (sm only)
+ *  - bottomActionBar slot は ページ固有 1〜2 アクション用 (片手UI)
  */
 export function AppShell({
   user,
@@ -35,35 +39,32 @@ export function AppShell({
 
   return (
     <div className="min-h-dvh flex flex-col">
-      <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+      <header
+        className="sticky top-0 z-40 w-full pt-safe bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/72"
+        style={{ boxShadow: 'inset 0 -1px 0 hsl(var(--border) / 0.6)' }}
+      >
         <div className="container flex h-14 items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-7">
             <Link
               href="/dashboard"
-              className="flex items-center gap-2 font-semibold tracking-tight"
+              className="inline-flex items-center rounded-md focus-visible:outline-none focus-visible:shadow-focus-ring"
               aria-label="Knowledge Sales Platform ホーム"
             >
-              <span aria-hidden className="inline-block h-6 w-6 rounded bg-primary" />
-              <span>KSP</span>
+              <Logo />
             </Link>
             <HeaderNav items={items} />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <span
-              className="hidden sm:inline-block text-sm text-muted-foreground truncate max-w-[160px]"
+              className="hidden sm:inline-flex items-center text-sm text-muted-foreground truncate max-w-[180px]"
               title={user.email ?? undefined}
             >
               {user.fullName ?? user.email}
             </span>
+            <span aria-hidden className="hidden sm:block h-5 w-px bg-border" />
             <form action={signOut}>
-              <button
-                type="submit"
-                aria-label="サインアウト"
-                className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                サインアウト
-              </button>
+              <SignOutButton />
             </form>
           </div>
         </div>
@@ -72,26 +73,24 @@ export function AppShell({
       <main
         id="main-content"
         tabIndex={-1}
-        className="flex-1 container py-6 md:py-8 outline-none pb-24 md:pb-8"
+        className="flex-1 container pt-6 md:pt-8 pb-12 md:pb-12 outline-none pb-nav"
       >
         {children}
       </main>
 
+      <MobileBottomNav />
+
       {bottomActionBar ? (
         <div
-          // 片手UI bottom_action_bar - 17_offline_mobile
-          //
-          // handedness 連動メモ:
-          // 主操作の左右寄せは globals.css の --bottom-action-bar-justify トークンで切替。
-          // ルート要素 (<html>) に data-handedness="left" or "right" を設定する想定で、
-          // 実際のユーザ設定との同期 (users.handedness 列 → SSR で <html> 属性) は
-          // P1 W3 T-005a (handedness toggle 設定 UI) で実装統合する。
-          // ここではユーティリティクラスではなく CSS var を使い、子コンポーネントが
-          // `style={{ justifyContent: 'var(--bottom-action-bar-justify)' }}` を取れる前提で配置。
-          className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t border-border bg-background/95 backdrop-blur px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center"
+          className={[
+            'md:hidden fixed bottom-[max(4.25rem,calc(4.25rem+env(safe-area-inset-bottom)))]',
+            'inset-x-0 z-20 px-4 py-2.5',
+            'flex items-center pointer-events-none',
+            '[&>*]:pointer-events-auto',
+          ].join(' ')}
           style={{ justifyContent: 'var(--bottom-action-bar-justify)' }}
           role="region"
-          aria-label="モバイルアクションバー"
+          aria-label="ページアクション"
         >
           {bottomActionBar}
         </div>

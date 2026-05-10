@@ -2,59 +2,124 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+   Knowledge Sales Platform — "Sumi & Cinnabar Editorial" tokens
+   ============================================================================ */
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    /* Surface palette — paper-leaning warm cream */
+    --background: 36 22% 97%;
+    --surface: 30 18% 95%;
+    --surface-raised: 0 0% 100%;
+    --surface-inset: 32 16% 93%;
+    --surface-highlight: 0 0% 100%;
 
-    /*
-     * 17_offline_mobile / 21_a11y_i18n: 片手UI handedness 切替の論理 token。
-     * 既定は右利き。<html data-handedness="left"> で左利きへ切替。
-     * 実 DB 連動 (users.handedness) は P1 W3 T-005a で接続予定。
-     */
+    --foreground: 220 35% 9%;
+    --muted: 32 14% 92%;
+    --muted-foreground: 220 12% 38%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 35% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 35% 9%;
+
+    /* Primary — sumi (墨) ink */
+    --primary: 220 38% 12%;
+    --primary-foreground: 36 22% 97%;
+
+    /* Cinnabar (朱) — brand active accent */
+    --cinnabar: 8 70% 48%;
+    --cinnabar-foreground: 0 0% 100%;
+    --cinnabar-muted: 10 75% 96%;
+
+    /* Chitose green (千歳緑) — success */
+    --chitose: 156 32% 32%;
+    --chitose-foreground: 36 22% 97%;
+    --chitose-muted: 156 25% 92%;
+
+    /* Ochre — warning */
+    --ochre: 32 78% 46%;
+    --ochre-foreground: 36 22% 97%;
+    --ochre-muted: 36 75% 94%;
+
+    /* Info (used sparingly) */
+    --info: 215 75% 42%;
+    --info-foreground: 0 0% 100%;
+
+    /* Destructive (less brand-attached than cinnabar) */
+    --destructive: 0 70% 46%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Accent — quiet hover surface */
+    --accent: 32 18% 90%;
+    --accent-foreground: 220 38% 12%;
+
+    /* Borders / rings */
+    --border: 32 14% 86%;
+    --ring: 8 65% 52%;
+
+    /* Shadow tinting */
+    --shadow-color: 220 35% 14%;
+
+    /* safe-area inset variables */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+
+    /* handedness CSS基盤 (P1 W3 で users.handedness と連動予定) */
     --bottom-action-bar-justify: flex-end;
-    --bottom-action-bar-padding-inline-start: 1rem;
-    --bottom-action-bar-padding-inline-end: 1rem;
+
+    /* Paper grain — turbulence ベース、light でのみ可視 */
+    --paper-grain: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.07 0 0 0 0 0.06 0 0 0 0 0.04 0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --background: 220 25% 6%;
+    --surface: 220 22% 9%;
+    --surface-raised: 220 18% 11%;
+    --surface-inset: 220 24% 7%;
+    --surface-highlight: 220 18% 18%;
+
+    --foreground: 32 18% 92%;
+    --muted: 220 18% 14%;
+    --muted-foreground: 220 10% 62%;
+
+    --card: 220 18% 11%;
+    --card-foreground: 32 18% 92%;
+    --popover: 220 18% 11%;
+    --popover-foreground: 32 18% 92%;
+
+    --primary: 32 22% 92%;
+    --primary-foreground: 220 25% 8%;
+
+    --cinnabar: 8 78% 60%;
+    --cinnabar-foreground: 220 25% 6%;
+    --cinnabar-muted: 8 30% 16%;
+
+    --chitose: 156 38% 55%;
+    --chitose-foreground: 220 25% 6%;
+    --chitose-muted: 156 25% 14%;
+
+    --ochre: 38 80% 60%;
+    --ochre-foreground: 220 25% 6%;
+    --ochre-muted: 38 35% 14%;
+
+    --info: 215 80% 62%;
+    --info-foreground: 220 25% 6%;
+
+    --destructive: 0 65% 56%;
+    --destructive-foreground: 220 25% 6%;
+
+    --accent: 220 18% 16%;
+    --accent-foreground: 32 18% 92%;
+
+    --border: 220 18% 18%;
+    --ring: 8 75% 60%;
+    --shadow-color: 0 0% 0%;
+
+    --paper-grain: none;
   }
 
   * {
@@ -62,52 +127,64 @@
   }
 
   html {
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'palt';
-    -webkit-text-size-adjust: 100%;
+    font-feature-settings: 'cv02', 'cv03', 'cv11', 'palt', 'ss01', 'ss02';
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior-y: none;
   }
 
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    background-image: var(--paper-grain);
+    background-size: 240px 240px;
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+    min-height: 100dvh;
   }
 
-  /* a11y: 21_a11y_i18n - キーボードフォーカス可視化 */
+  /* 数値 (KPI / metric) は tabular + zero-slash */
+  .tabular {
+    font-variant-numeric: tabular-nums slashed-zero;
+    font-feature-settings: 'tnum', 'zero', 'ss01';
+  }
+
+  /* Editorial display class — heading 用 */
+  .display {
+    font-family: var(--font-display), var(--font-jp), system-ui, sans-serif;
+    letter-spacing: -0.018em;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+
+  /* Editorial kicker (small all-caps label) */
+  .kicker {
+    font-family: var(--font-display), var(--font-jp), system-ui, sans-serif;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
+    font-feature-settings: 'ss02', 'cv11';
+  }
+
+  /* Editorial section number — KPI cards 等 */
+  .section-no {
+    font-family: var(--font-display), system-ui, sans-serif;
+    font-feature-settings: 'tnum', 'zero', 'ss01', 'ss02';
+    font-variant-numeric: tabular-nums slashed-zero;
+    font-style: italic;
+    color: hsl(var(--muted-foreground) / 0.7);
+  }
+
+  /* Focus visible — 2 段 (ring + soft glow) */
   :focus-visible {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
-    border-radius: 2px;
+    border-radius: 0.25rem;
   }
 
-  /* prefers-reduced-motion - モーション抑制 */
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
-    }
-  }
-
-  /*
-   * 17_offline_mobile - 片手UI handedness 基盤。
-   * <html data-handedness="left"> で bottom_action_bar の主操作を左寄せにする。
-   * 各コンポーネントは var(--bottom-action-bar-justify) を参照する想定。
-   */
-  [data-handedness='left'] {
-    --bottom-action-bar-justify: flex-start;
-    --bottom-action-bar-padding-inline-start: 1rem;
-    --bottom-action-bar-padding-inline-end: 1rem;
-  }
-
-  [data-handedness='right'] {
-    --bottom-action-bar-justify: flex-end;
-  }
-}
-
-@layer utilities {
-  /* Skip link / SR only - 21_a11y_i18n */
+  /* Skip link */
   .sr-only {
     position: absolute;
     width: 1px;
@@ -119,26 +196,105 @@
     white-space: nowrap;
     border-width: 0;
   }
-
   .sr-only-focusable:focus,
   .sr-only-focusable:focus-visible {
-    position: fixed;
-    top: 0.5rem;
-    left: 0.5rem;
-    z-index: 100;
+    position: static;
     width: auto;
     height: auto;
-    padding: 0.5rem 1rem;
     margin: 0;
     overflow: visible;
     clip: auto;
     white-space: normal;
-    background-color: hsl(var(--background));
+    padding: 0.5rem 1rem;
+    background: hsl(var(--surface-raised));
     color: hsl(var(--foreground));
-    border: 2px solid hsl(var(--ring));
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    text-decoration: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 0 0 2px hsl(var(--ring));
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .hairline {
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      hsl(var(--border)) 14%,
+      hsl(var(--border)) 86%,
+      transparent 100%
+    );
+    height: 1px;
+    width: 100%;
+  }
+
+  .inkan {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: hsl(var(--cinnabar));
+    color: hsl(var(--cinnabar-foreground));
+    font-weight: 700;
+    border-radius: 0.125rem;
+    box-shadow:
+      inset 0 0 0 1px hsl(var(--cinnabar) / 0.4),
+      0 1px 0 hsl(var(--cinnabar) / 0.3);
+  }
+
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted) / 0.5) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2.4s linear infinite;
+  }
+
+  .v-rule {
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      hsl(var(--border)) 14%,
+      hsl(var(--border)) 86%,
+      transparent 100%
+    );
+    width: 1px;
+  }
+
+  .nav-active-mark {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 2px;
+    border-radius: 0 0 999px 999px;
+    background: hsl(var(--cinnabar));
+  }
+}
+
+@layer utilities {
+  .pt-safe { padding-top: var(--safe-top); }
+  .pb-safe { padding-bottom: var(--safe-bottom); }
+  .pl-safe { padding-left: var(--safe-left); }
+  .pr-safe { padding-right: var(--safe-right); }
+  .h-safe-bottom { height: var(--safe-bottom); }
+
+  .pb-nav { padding-bottom: calc(4.5rem + var(--safe-bottom)); }
+  @media (min-width: 768px) {
+    .pb-nav { padding-bottom: 0; }
   }
 }

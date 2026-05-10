@@ -6,14 +6,12 @@ export default function SettingsPage() {
   return (
     <PagePlaceholder
       scCode="SC-32"
-      title="設定"
-      description="個人設定 (通知 / 表示言語 / テーマ) と外部サービス連携 (Google / Zoom) の状態確認。"
-      helpText={[
-        'プロフィール: 表示名 / 連絡先 / アバター。',
-        '連携: Google Calendar / Gmail / Zoom の接続状態と再接続。Gmail スコープは初回連携時に追加同意 (incremental authorization)。',
-        '表示: テーマ (light/dark/system) / フォントサイズ / 言語 (ja / en, 21_a11y_i18n)。',
-        '通知: 商談リマインド / 録画処理完了 / 失敗通知のオン/オフ。',
-      ].join('\n\n')}
+      kicker="個人設定"
+      title="自分の使い心地を、整える。"
+      description="連携サービス・通知・利き手・タイムゾーンを、自分の動き方に合わせて。"
+      helpText={`Google カレンダー・Gmail との連携状態をいつでも確認・解除できます。
+スマートフォンでの片手操作 (右利き / 左利き) を切り替えると、主な操作ボタンが手元側に寄ります。
+通知の鳴らし方は「通知設定」から細かく調整できます。`}
     />
   );
 }

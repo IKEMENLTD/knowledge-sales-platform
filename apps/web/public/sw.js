@@ -1,18 +1,39 @@
-// Service Worker placeholder - Phase1 W3 で workbox ベース実装予定 (T-007 連動)
-// 17_offline_mobile / 20_failure_recovery のオフラインキューと連動。
-//
-// 現状は no-op で SW 登録自体を成功させ、PWA インストール要件を満たすのみ。
-// 実装時に precache / runtime-cache (network-first for API, stale-while-revalidate for assets) を追加。
+/* Knowledge Sales Platform — minimal Service Worker (P1 W1 scaffold)
+ *
+ * navigation 時にネットワーク優先 → 失敗で /offline をフォールバック表示。
+ * 本格的な offline-first cache 戦略 (workbox / IndexedDB 暗号化) は Phase1 W3 (T-007) で。
+ */
+const CACHE = 'ksp-shell-v1';
+const OFFLINE_URL = '/offline';
+const PRECACHE = [OFFLINE_URL, '/favicon.svg', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
-  // 即時 activate (古い SW を引き継がない)
+  event.waitUntil(
+    caches
+      .open(CACHE)
+      .then((cache) => cache.addAll(PRECACHE))
+      .catch(() => undefined),
+  );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
+      await self.clients.claim();
+    })(),
+  );
 });
 
-self.addEventListener('fetch', () => {
-  // Phase1 W3 で実装: ネットワーク失敗時 /offline にフォールバック
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  if (request.mode !== 'navigate') return;
+  event.respondWith(
+    fetch(request).catch(async () => {
+      const cached = await caches.match(OFFLINE_URL);
+      return cached ?? new Response('Offline', { status: 503 });
+    }),
+  );
 });

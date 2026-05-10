@@ -1,6 +1,6 @@
 import { PagePlaceholder } from '@/components/layout/placeholder';
 
-export const metadata = { title: '名刺レビュー' };
+export const metadata = { title: '名刺の確認' };
 
 export default async function ContactReviewPage({
   params,
@@ -8,19 +8,17 @@ export default async function ContactReviewPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-
   return (
     <PagePlaceholder
       scCode="SC-08"
       taskCode="T-010"
-      title="名刺レビュー"
-      description="OCR で抽出した連絡先情報を確認・修正して保存します。"
-      helpText={[
-        `Contact ID: ${id}`,
-        '左側に名刺画像、右側に抽出フィールド (氏名 / 会社 / 役職 / Email / 電話) を表示します。',
-        '低信頼度フィールドはハイライトされ、原文照合 (15_field_ux_supplement) で目視確認しやすくなります。',
-        '保存すると connections テーブルへ登録され、商談紐付け候補に使われます。',
-      ].join('\n\n')}
+      kicker="営業 / 名刺"
+      title="読み取った内容を、確認する。"
+      description="自動入力された会社名・氏名・連絡先を確認し、修正してから保存します。"
+      helpText={`連絡先 ID: ${id}
+画像から読み取れない箇所は薄く表示されます。
+同じ人がすでに登録されている可能性があれば、候補としてここで知らせます。
+保存すると、その人との商談履歴やメールが自動で紐づくようになります。`}
     />
   );
 }

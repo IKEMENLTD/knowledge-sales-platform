@@ -2,16 +2,35 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { forwardRef, type HTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
+/**
+ * Token-based alert. dark mode で崩壊しない。
+ *  - default: muted neutral
+ *  - cinnabar: brand active accent (まれに、CTA-like 通知用)
+ *  - destructive: 警告・エラー
+ *  - warning (ochre): 注意
+ *  - success (chitose): 達成
+ *  - info: 情報補足
+ */
 const alertVariants = cva(
-  'relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4',
+  [
+    'relative w-full rounded-lg border p-4 text-sm leading-relaxed',
+    "[&>svg~*]:pl-7 [&>svg+div]:translate-y-[-2px]",
+    '[&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:size-4',
+  ].join(' '),
   {
     variants: {
       variant: {
-        default: 'bg-background text-foreground',
+        default: 'bg-card text-foreground border-border',
+        cinnabar:
+          'bg-cinnabar-muted text-cinnabar border-cinnabar/30 [&>svg]:text-cinnabar',
         destructive:
-          'border-destructive/50 text-destructive bg-destructive/5 [&>svg]:text-destructive',
-        warning: 'border-amber-500/50 text-amber-700 bg-amber-50 [&>svg]:text-amber-600',
-        info: 'border-blue-500/40 text-blue-800 bg-blue-50 [&>svg]:text-blue-600',
+          'bg-destructive/8 text-destructive border-destructive/30 [&>svg]:text-destructive',
+        warning:
+          'bg-ochre-muted text-ochre border-ochre/30 [&>svg]:text-ochre',
+        success:
+          'bg-chitose-muted text-chitose border-chitose/30 [&>svg]:text-chitose',
+        info:
+          'bg-info/10 text-info border-info/25 [&>svg]:text-info',
       },
     },
     defaultVariants: { variant: 'default' },
@@ -38,7 +57,7 @@ const AlertTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElem
   ({ className, ...props }, ref) => (
     <h5
       ref={ref}
-      className={cn('mb-1 font-medium leading-none tracking-tight', className)}
+      className={cn('mb-1 font-semibold tracking-crisp leading-none', className)}
       {...props}
     />
   ),
@@ -47,7 +66,7 @@ AlertTitle.displayName = 'AlertTitle';
 
 const AlertDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('text-sm [&_p]:leading-relaxed', className)} {...props} />
+    <div ref={ref} className={cn('text-sm leading-relaxed [&_p]:leading-relaxed', className)} {...props} />
   ),
 );
 AlertDescription.displayName = 'AlertDescription';

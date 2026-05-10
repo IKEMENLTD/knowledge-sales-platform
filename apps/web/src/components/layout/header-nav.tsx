@@ -7,18 +7,24 @@ import { cn } from '@/lib/utils';
 export type NavItem = {
   href: string;
   label: string;
-  /** admin role 限定など (display gate, 実際のガードは layout 側 requireUser({role}) で行う) */
   requireRole?: 'manager' | 'admin';
 };
 
 /**
- * usePathname() で aria-current="page" を付与 (21_a11y_i18n)
+ * Editorial header nav.
+ *  - active: 下に 2px の cinnabar inset rule
+ *  - hover: foreground 切替 + 背景は弱く
+ *  - 44px+ tap target を維持
  */
 export function HeaderNav({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="メインナビゲーション" className="hidden md:flex items-center gap-1">
+    <nav
+      id="site-nav"
+      aria-label="メインナビゲーション"
+      className="hidden md:flex items-center gap-0.5"
+    >
       {items.map((item) => {
         const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
@@ -27,14 +33,22 @@ export function HeaderNav({ items }: { items: NavItem[] }) {
             href={item.href as never}
             aria-current={isActive ? 'page' : undefined}
             className={cn(
-              'px-3 py-2 text-sm font-medium rounded-md transition-colors',
-              'hover:bg-accent hover:text-accent-foreground',
+              'relative inline-flex items-center justify-center min-h-11 px-3.5',
+              'text-sm font-medium tracking-crisp',
+              'rounded-md transition-colors duration-fast ease-sumi',
+              'focus-visible:outline-none focus-visible:shadow-focus-ring',
               isActive
-                ? 'bg-accent text-accent-foreground'
-                : 'text-muted-foreground',
+                ? 'text-foreground'
+                : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
             )}
           >
             {item.label}
+            {isActive ? (
+              <span
+                aria-hidden
+                className="absolute bottom-0 left-3.5 right-3.5 h-[2px] bg-cinnabar rounded-full"
+              />
+            ) : null}
           </Link>
         );
       })}

@@ -21,19 +21,23 @@ export default function DashboardError({
   }, [error]);
 
   return (
-    <div className="space-y-4 max-w-xl">
+    <div className="space-y-6 max-w-xl mx-auto pt-8">
+      <div className="flex items-baseline justify-between border-t-2 border-foreground pt-3">
+        <p className="kicker">№ 01 — ホーム</p>
+        <p className="kicker">読込失敗</p>
+      </div>
       <Alert variant="destructive" aria-live="assertive">
-        <AlertTitle>ダッシュボードを表示できませんでした</AlertTitle>
+        <AlertTitle>ホームを表示できませんでした</AlertTitle>
         <AlertDescription>
-          一時的なエラーが発生しました。もう一度お試しください。問題が続く場合は管理者にお問い合わせください。
+          ネットワークが不安定だった可能性があります。もう一度試して、それでも続くようでしたら管理者へお知らせください。
           {error.digest ? (
             <p className="mt-2 text-xs font-mono opacity-70">エラーID: {error.digest}</p>
           ) : null}
         </AlertDescription>
       </Alert>
       <div className="flex gap-3">
-        <Button onClick={() => reset()} aria-label="ダッシュボードを再読込">
-          再試行
+        <Button onClick={() => reset()} aria-label="ホームを再読込">
+          もう一度読み込む
         </Button>
         <Button asChild variant="outline">
           <a href="/dashboard">トップへ戻る</a>

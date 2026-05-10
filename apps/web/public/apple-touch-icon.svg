@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180">
+  <rect width="180" height="180" rx="36" fill="#fafaf6"/>
+  <g transform="translate(36 36)">
+    <g fill="#131a26">
+      <rect x="33" y="33" width="20" height="115" rx="3"/>
+      <path d="M64 90 L120 33 L138 33 L77 95 Z"/>
+      <path d="M77 86 L138 148 L120 148 L64 90 Z"/>
+    </g>
+    <rect x="125" y="125" width="34" height="34" rx="3" fill="#cf3a2d"/>
+  </g>
+</svg>

@@ -1,6 +1,6 @@
 import { PagePlaceholder } from '@/components/layout/placeholder';
 
-export const metadata = { title: '商談詳細' };
+export const metadata = { title: '商談の詳細' };
 
 export default async function MeetingDetailPage({
   params,
@@ -12,14 +12,12 @@ export default async function MeetingDetailPage({
     <PagePlaceholder
       scCode="SC-11"
       taskCode="T-014"
-      title="商談詳細"
-      description="単一商談の録画・文字起こし・要約・アクションアイテムを統合表示します。"
-      helpText={[
-        `Meeting ID: ${id}`,
-        'タブ構成: サマリー / 文字起こし / アクションアイテム / 関連ナレッジ。',
-        '録画は Zoom 連携 (T-013) が完了すると自動で Recording に紐付き、worker 側で文字起こし・要約処理が走ります。',
-        '完了通知は dashboard 上部の通知バナーで案内します。',
-      ].join('\n\n')}
+      kicker="営業 / 商談"
+      title="一回の商談を、深く読む。"
+      description="録画・要約・約束事項・次のアクションを一画面に。検索したいキーワードから、その台詞の場面までジャンプできます。"
+      helpText={`商談 ID: ${id}
+録画は完了次第、自動でこの画面に並びます。
+営業マン本人は要点や次のアクションをここで編集して残せます。編集した結果は引き継ぎ書・議事録にも反映されます。`}
     />
   );
 }

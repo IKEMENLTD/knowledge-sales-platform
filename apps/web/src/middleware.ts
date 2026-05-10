@@ -20,6 +20,10 @@ const PUBLIC_PATHS = new Set<string>([
   '/manifest.webmanifest',
   '/sw.js',
   '/favicon.ico',
+  '/favicon.svg',
+  '/apple-touch-icon.svg',
+  '/apple-touch-icon.png',
+  '/og-image.svg',
 ]);
 
 const PUBLIC_PREFIXES = [

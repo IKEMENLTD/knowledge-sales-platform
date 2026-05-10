@@ -6,13 +6,11 @@ export default function MobileQueuePage() {
   return (
     <PagePlaceholder
       scCode="SC-34"
-      title="オフラインキュー"
-      description="オフライン中に取り込んだ名刺・メモ・録音の同期待ちアイテムを表示します。"
-      helpText={[
-        '17_offline_mobile / 20_failure_recovery: アイテム別ステータス (同期待ち / アップロード中 / 完了 / 失敗+再試行)。',
-        '失敗時はリトライボタンと、Sentry に送られるエラーIDを表示。',
-        'IndexedDB 暗号化キーは libsodium で派生され、サインアウトで失効。サインアウト中はキュー内容も復号できない設計です。',
-      ].join('\n\n')}
+      kicker="モバイル / キュー"
+      title="まだ送れていないものを、確認する。"
+      description="圏外で記録した名刺・メモが、ここに一時的に貯まります。回線が戻り次第、自動で送信されます。"
+      helpText={`通信が回復すると、上から順番に送信を試みます。
+失敗が続いたものはお知らせするので、再撮影や手動で内容を直してから再送できます。`}
     />
   );
 }
