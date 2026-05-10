@@ -11,10 +11,6 @@ import {
 } from 'react';
 import { cn } from '@/lib/utils';
 
-/**
- * モバイル用ドロワー (17_offline_mobile / SC-33〜35 で使用)。
- * Radix Dialog を side variant でラップしただけのもの。
- */
 const Sheet = DialogPrimitive.Root;
 const SheetTrigger = DialogPrimitive.Trigger;
 const SheetClose = DialogPrimitive.Close;
@@ -26,21 +22,36 @@ const SheetOverlay = forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
-    className={cn('fixed inset-0 z-50 bg-black/60 data-[state=open]:animate-fade-in', className)}
+    className={cn(
+      'fixed inset-0 z-50 bg-foreground/35 backdrop-blur-md',
+      'data-[state=open]:animate-fade-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0',
+      className,
+    )}
     {...props}
   />
 ));
 SheetOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
+/**
+ * Editorial sheet — bottom variant は iOS 流儀の rounded-t-2xl + drag handle、
+ * overscroll-behavior:contain で背景の scroll chaining を防ぐ。
+ */
 const sheetVariants = cva(
-  'fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out',
+  [
+    'fixed z-50 gap-4 bg-card text-card-foreground p-6',
+    'shadow-sumi-xl border-border',
+    '[overscroll-behavior:contain]',
+    'transition ease-sumi data-[state=open]:animate-in data-[state=closed]:animate-out',
+  ].join(' '),
   {
     variants: {
       side: {
-        top: 'inset-x-0 top-0 border-b',
-        bottom: 'inset-x-0 bottom-0 border-t',
-        left: 'inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm',
-        right: 'inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm',
+        top: 'inset-x-0 top-0 border-b rounded-b-2xl pt-safe data-[state=open]:slide-in-from-top data-[state=closed]:slide-out-to-top',
+        bottom:
+          'inset-x-0 bottom-0 border-t rounded-t-2xl pb-[max(1.5rem,env(safe-area-inset-bottom))] data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom',
+        left: 'inset-y-0 left-0 h-full w-[88%] max-w-sm border-r rounded-r-2xl pl-safe data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left',
+        right:
+          'inset-y-0 right-0 h-full w-[88%] max-w-sm border-l rounded-l-2xl pr-safe data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right',
       },
     },
     defaultVariants: { side: 'right' },
@@ -60,12 +71,24 @@ const SheetContent = forwardRef<ElementRef<typeof DialogPrimitive.Content>, Shee
         className={cn(sheetVariants({ side }), className)}
         {...props}
       >
+        {/* drag handle hint (bottom variant 専用) */}
+        {side === 'bottom' ? (
+          <div
+            aria-hidden
+            className="absolute left-1/2 top-2 -translate-x-1/2 h-1.5 w-10 rounded-full bg-muted-foreground/30"
+          />
+        ) : null}
         {children}
         <DialogPrimitive.Close
-          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className={cn(
+            'absolute right-3 top-3 inline-flex size-11 items-center justify-center rounded-md',
+            'text-muted-foreground transition-colors duration-fast ease-sumi',
+            'hover:text-foreground hover:bg-accent active:bg-accent/80',
+            'focus-visible:outline-none focus-visible:shadow-focus-ring',
+          )}
           aria-label="閉じる"
         >
-          <X className="h-4 w-4" />
+          <X className="size-5" strokeWidth={1.6} />
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>
     </SheetPortal>
@@ -74,7 +97,7 @@ const SheetContent = forwardRef<ElementRef<typeof DialogPrimitive.Content>, Shee
 SheetContent.displayName = DialogPrimitive.Content.displayName;
 
 const SheetHeader = ({ className, ...props }: HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn('flex flex-col space-y-2 text-center sm:text-left', className)} {...props} />
+  <div className={cn('flex flex-col gap-2 text-left', className)} {...props} />
 );
 SheetHeader.displayName = 'SheetHeader';
 
@@ -84,7 +107,7 @@ const SheetTitle = forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn('text-lg font-semibold text-foreground', className)}
+    className={cn('display text-xl font-semibold tracking-crisp', className)}
     {...props}
   />
 ));
@@ -96,7 +119,7 @@ const SheetDescription = forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn('text-sm text-muted-foreground', className)}
+    className={cn('text-sm leading-relaxed text-muted-foreground', className)}
     {...props}
   />
 ));

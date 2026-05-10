@@ -31,7 +31,7 @@
     /* Cinnabar (朱) — brand active accent */
     --cinnabar: 8 70% 48%;
     --cinnabar-foreground: 0 0% 100%;
-    --cinnabar-muted: 10 75% 96%;
+    --cinnabar-muted: 8 60% 93%;
 
     /* Chitose green (千歳緑) — success */
     --chitose: 156 32% 32%;
@@ -43,9 +43,9 @@
     --ochre-foreground: 36 22% 97%;
     --ochre-muted: 36 75% 94%;
 
-    /* Info (used sparingly) */
-    --info: 215 75% 42%;
-    --info-foreground: 0 0% 100%;
+    /* Info — 藍 (ai) で和テイストに馴染ませる */
+    --info: 204 52% 38%;
+    --info-foreground: 36 22% 97%;
 
     /* Destructive (less brand-attached than cinnabar) */
     --destructive: 0 70% 46%;
@@ -106,7 +106,7 @@
     --ochre-foreground: 220 25% 6%;
     --ochre-muted: 38 35% 14%;
 
-    --info: 215 80% 62%;
+    --info: 204 60% 60%;
     --info-foreground: 220 25% 6%;
 
     --destructive: 0 65% 56%;
@@ -119,7 +119,14 @@
     --ring: 8 75% 60%;
     --shadow-color: 0 0% 0%;
 
-    --paper-grain: none;
+    /* dark では grain を消し、極微弱な縦帯 hairline で質感を作る */
+    --paper-grain: linear-gradient(
+      to right,
+      hsl(var(--border) / 0.3) 0,
+      hsl(var(--border) / 0.3) 1px,
+      transparent 1px,
+      transparent 32px
+    );
   }
 
   * {
@@ -142,6 +149,12 @@
     padding-left: var(--safe-left);
     padding-right: var(--safe-right);
     min-height: 100dvh;
+  }
+
+  /* dark mode では vertical hairline を tile (32px 幅) で焼く */
+  .dark body {
+    background-size: 32px 100%;
+    background-repeat: repeat-x;
   }
 
   /* 数値 (KPI / metric) は tabular + zero-slash */

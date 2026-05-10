@@ -82,15 +82,37 @@ export default async function DashboardPage() {
         />
       </section>
 
+      {/*
+        Dashboard hero — 真の hero card に格上げ:
+        - 上に radial cinnabar glow で視覚 weight UP
+        - 右下に inkan 落款 (rotated-8) で signature 感
+        - border-foreground/10 で primary card の3つよりも勝つ存在感
+      */}
       <section
         aria-label="最初の一歩"
-        className="rounded-2xl border border-border/70 bg-card/80 shadow-sumi-sm overflow-hidden animate-fade-up [animation-delay:140ms]"
+        className="relative overflow-hidden rounded-2xl border border-foreground/10 bg-card shadow-sumi animate-fade-up [animation-delay:140ms]"
       >
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 p-6 md:p-8 items-start">
+        <div
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-1/2 bg-[radial-gradient(ellipse_at_top_right,hsl(var(--cinnabar)/0.08),transparent_60%)]"
+        />
+        <div
+          aria-hidden
+          className="absolute -right-8 -bottom-8 size-44 rotate-[-8deg] rounded-md bg-cinnabar/[0.06] shadow-[inset_0_0_0_1px_hsl(var(--cinnabar)/0.18)]"
+        />
+        <div
+          aria-hidden
+          className="absolute -right-2 -bottom-2 size-16 rotate-[-8deg] rounded inkan flex items-center justify-center text-2xl font-display"
+        >
+          K
+        </div>
+        <div className="relative grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 p-6 md:p-10 items-start">
           <div>
             <p className="kicker mb-3">最初の一歩 — № 05</p>
-            <h2 className="display text-xl md:text-2xl font-semibold tracking-crisp">
-              実データを入れる前に、サンプルで触ってみる。
+            <h2 className="display text-2xl md:text-[1.875rem] font-semibold tracking-crisp leading-tight text-balance">
+              実データを入れる前に、
+              <br className="hidden sm:block" />
+              サンプルで触ってみる。
             </h2>
             <p className="mt-3 text-sm md:text-[0.95rem] leading-7 text-muted-foreground max-w-prose">
               ダミーの商談・名刺・録画を入れた状態で操作感を確かめられます。あとで一括で消せます。
@@ -98,7 +120,7 @@ export default async function DashboardPage() {
           </div>
           <Link
             href="/onboarding"
-            className="inline-flex items-center gap-2 rounded-lg border border-cinnabar/50 bg-cinnabar/5 px-4 py-2.5 text-sm font-medium text-cinnabar hover:bg-cinnabar hover:text-cinnabar-foreground transition-colors duration-fast ease-sumi self-end md:self-center"
+            className="inline-flex items-center gap-2 rounded-lg border border-cinnabar/50 bg-cinnabar/8 px-4 py-2.5 text-sm font-medium text-cinnabar hover:bg-cinnabar hover:text-cinnabar-foreground hover:-translate-y-px hover:shadow-cinnabar-glow transition-[transform,box-shadow,background-color,color] duration-fast ease-sumi self-end md:self-center"
           >
             セットアップを再開する
             <ArrowUpRight aria-hidden className="size-4" />
@@ -137,11 +159,18 @@ function KpiCard({ no, kicker, metric, hint, Icon, cta }: KpiCardProps) {
             className="size-6 shrink-0 text-muted-foreground/60 group-hover:text-cinnabar/80 transition-colors duration-med ease-sumi"
           />
           <p
-            className={`display tabular text-metric font-semibold leading-none tracking-[-0.025em] ${metric === '—' ? 'text-muted-foreground/35' : ''}`}
+            className={`display tabular text-metric font-semibold leading-none tracking-[-0.022em] ${metric === '—' ? 'text-muted-foreground/35' : ''}`}
           >
             {metric}
           </p>
         </div>
+        {/* 空状態の baseline + cinnabar 脈動 dot — 用意ができる前の "静かな準備" */}
+        {metric === '—' ? (
+          <div aria-hidden className="relative h-4">
+            <div className="absolute inset-x-0 top-1/2 h-px bg-[image:repeating-linear-gradient(to_right,hsl(var(--border))_0,hsl(var(--border))_3px,transparent_3px,transparent_6px)]" />
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 size-1.5 rounded-full bg-cinnabar/70 animate-pulse-ink" />
+          </div>
+        ) : null}
         <p className="text-xs leading-relaxed text-muted-foreground/85">{hint}</p>
         {cta ? (
           <Link
