@@ -9,7 +9,7 @@ import { SignOutButton } from './signout-button';
 
 const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard', label: 'ホーム' },
-  { href: '/contacts/import', label: '名刺' },
+  { href: '/contacts', label: '名刺' },
   { href: '/meetings', label: '商談' },
   { href: '/recordings', label: '録画' },
   { href: '/search', label: '検索' },
@@ -38,7 +38,10 @@ export function AppShell({
   const items = user.role === 'admin' ? [...NAV_ITEMS, ...ADMIN_ITEMS] : NAV_ITEMS;
 
   return (
-    <div className="min-h-dvh flex flex-col">
+    <div
+      className="min-h-dvh flex flex-col"
+      style={{ ['--app-header-h' as string]: '3.5rem' }}
+    >
       <header
         className="sticky top-0 z-40 w-full pt-safe bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/72"
         style={{ boxShadow: 'inset 0 -1px 0 hsl(var(--border) / 0.6)' }}
