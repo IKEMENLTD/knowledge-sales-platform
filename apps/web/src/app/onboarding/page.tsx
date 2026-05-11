@@ -1,28 +1,27 @@
 import { redirect } from 'next/navigation';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { requireUser } from '@/lib/auth/server';
 import {
   PRIVACY_BODY,
   PRIVACY_HASH,
+  PRIVACY_VERSION,
   TERMS_BODY,
   TERMS_HASH,
-} from '@/lib/auth/onboarding';
-import { requireUser } from '@/lib/auth/server';
+  TERMS_VERSION,
+} from '@/lib/onboarding/policy-document';
 import {
   getOnboardingState,
-  PRIVACY_VERSION,
-  TERMS_VERSION,
   isFullyOnboarded,
+  isStepDone,
 } from '@/lib/onboarding/state';
+import { ErrorFocusAlert } from './_components/error-focus';
 import { OnboardingStepper, type Step } from './_components/stepper';
 import { StepCalendar } from './_components/step-calendar';
 import { StepConsent } from './_components/step-consent';
 import { StepDone } from './_components/step-done';
 import { StepSample } from './_components/step-sample';
 
-void TERMS_HASH;
-void PRIVACY_HASH;
-
 export const metadata = { title: 'はじめての設定' };
+export const dynamic = 'force-dynamic';
 
 type SearchParams = { step?: string; error?: string };
 
@@ -30,18 +29,26 @@ const STEP_ERROR_TEXT: Record<string, string> = {
   consent_required: '次へ進むには、両方の項目に同意が必要です。',
   oauth_failed: 'Google カレンダー連携に失敗しました。もう一度お試しください。',
   incomplete: '必須ステップが完了していません。',
+  calendar_incomplete: 'Google カレンダーを連携するか「あとで連携する」を選んでください。',
+  save_failed: '保存に失敗しました。時間をおいて再度お試しください。',
+  permission_denied: '権限が不足しています。管理者にお問い合わせください。',
+  already_done: '既に完了しています。',
+  org_missing: 'アカウント情報が見つかりません。管理者にお問い合わせください。',
 };
 
 function resolveActive(
   step: string | undefined,
   state: Awaited<ReturnType<typeof getOnboardingState>>,
 ): 'consent' | 'calendar' | 'sample' | 'done' {
-  if (step === 'consent' || step === 'calendar' || step === 'sample' || step === 'done') {
+  if (step === 'done') {
+    return isFullyOnboarded(state) ? 'done' : 'consent';
+  }
+  if (step === 'consent' || step === 'calendar' || step === 'sample') {
     return step;
   }
   if (!state.termsConsentedAt || !state.privacyAcknowledgedAt) return 'consent';
-  if (!state.calendarConnectedAt) return 'calendar';
-  if (!state.sampleDataLoadedAt) return 'sample';
+  if (!state.calendarConnectedAt && !state.calendarSkippedAt) return 'calendar';
+  if (!state.sampleDataLoadedAt && !state.sampleSkippedAt) return 'sample';
   return 'done';
 }
 
@@ -49,22 +56,29 @@ function buildStepperState(
   active: ReturnType<typeof resolveActive>,
   state: Awaited<ReturnType<typeof getOnboardingState>>,
 ): Step[] {
-  const consentDone = !!state.termsConsentedAt && !!state.privacyAcknowledgedAt;
-  const calendarDone = !!state.calendarConnectedAt;
-  const sampleDone = !!state.sampleDataLoadedAt;
+  const consentStatus = isStepDone(state, 'consent');
+  const calendarStatus = isStepDone(state, 'calendar');
+  const sampleStatus = isStepDone(state, 'sample');
 
-  const status = (id: Step['id'], isDone: boolean, optional?: boolean): Step['status'] => {
-    if (isDone) return 'done';
+  const status = (
+    id: Step['id'],
+    stepStatus: 'done' | 'skipped' | 'pending',
+  ): Step['status'] => {
+    if (stepStatus === 'done') return 'done';
+    if (stepStatus === 'skipped') return 'skipped';
     if (active === id) return 'active';
-    if (optional && active === 'done') return 'skipped';
     return 'pending';
   };
 
   return [
-    { id: 'consent', label: '同意事項', status: status('consent', consentDone) },
-    { id: 'calendar', label: 'カレンダー', status: status('calendar', calendarDone) },
-    { id: 'sample', label: 'サンプル', status: status('sample', sampleDone, true) },
-    { id: 'done', label: '完了', status: active === 'done' ? 'active' : 'pending' },
+    { id: 'consent', label: '同意事項', status: status('consent', consentStatus) },
+    { id: 'calendar', label: 'カレンダー', status: status('calendar', calendarStatus) },
+    { id: 'sample', label: 'サンプル', status: status('sample', sampleStatus) },
+    {
+      id: 'done',
+      label: '完了',
+      status: active === 'done' ? 'active' : 'pending',
+    },
   ];
 }
 
@@ -89,11 +103,19 @@ export default async function OnboardingPage({
     <main
       id="main-content"
       tabIndex={-1}
-      className="mx-auto min-h-dvh max-w-2xl px-6 py-10 md:py-16 outline-none flex flex-col"
+      className="mx-auto min-h-dvh max-w-2xl px-6 pt-10 md:pt-16 pb-[max(env(safe-area-inset-bottom),2.5rem)] outline-none flex flex-col"
     >
       <div className="flex items-baseline justify-between border-t-2 border-foreground pt-3 mb-8 animate-fade-in">
-        <p className="kicker">SC-61 — はじめての設定</p>
-        <p className="kicker">{active === 'done' ? 'COMPLETE' : 'SETUP'}</p>
+        <p className="kicker">はじめての設定</p>
+        <p className="kicker">
+          {active === 'done'
+            ? 'COMPLETE'
+            : active === 'consent'
+              ? 'STEP 01 / 03'
+              : active === 'calendar'
+                ? 'STEP 02 / 03'
+                : 'STEP 03 / 03'}
+        </p>
       </div>
 
       <header className="space-y-2 mb-8 animate-fade-up">
@@ -108,10 +130,7 @@ export default async function OnboardingPage({
       <OnboardingStepper steps={stepper} />
 
       {errorMessage ? (
-        <Alert variant="warning" aria-live="polite" className="mb-6 animate-fade-up">
-          <AlertTitle>確認してください</AlertTitle>
-          <AlertDescription>{errorMessage}</AlertDescription>
-        </Alert>
+        <ErrorFocusAlert title="確認してください" description={errorMessage} />
       ) : null}
 
       <section className="animate-fade-up [animation-delay:60ms]">
@@ -121,6 +140,8 @@ export default async function OnboardingPage({
             privacyBody={PRIVACY_BODY}
             termsVersion={TERMS_VERSION}
             privacyVersion={PRIVACY_VERSION}
+            termsHash={TERMS_HASH}
+            privacyHash={PRIVACY_HASH}
             showError={params.error === 'consent_required'}
           />
         ) : active === 'calendar' ? (
@@ -135,7 +156,9 @@ export default async function OnboardingPage({
             termsAccepted={!!state.termsConsentedAt}
             privacyAccepted={!!state.privacyAcknowledgedAt}
             calendarConnected={!!state.calendarConnectedAt}
+            calendarSkipped={!!state.calendarSkippedAt}
             sampleLoaded={!!state.sampleDataLoadedAt}
+            sampleSkipped={!!state.sampleSkippedAt}
           />
         )}
       </section>
