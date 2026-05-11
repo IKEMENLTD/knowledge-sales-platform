@@ -103,6 +103,8 @@
 | `524f31a` | Design Round 2 polish (Dialog/Sheet + 藍 info + KPI pulse + Dashboard hero) |
 | `589d4a2` | Design Round 3 全観点 95+ PASS |
 | `5c4a35b` | Smoke test 準備 (onboarded_at 列 + 完了ボタン + name 列修正) |
+| `0e22ff9` | Onboarding RLS 完治 (0032/0033 NULL fallback + checkbox accent-color 修正) |
+| `f7908b5` | 名刺/商談/録画/検索/メンバー 5 ページ実装 (デモ fixture + R2 平均 96 score) |
 
 ---
 
@@ -173,16 +175,18 @@
 詳細は [`docs/REMAINING_WORK.md`](./REMAINING_WORK.md) + GitHub Issues。
 
 ### 直近の優先順位
-1. 🔴 **実機 Sign-in 完走テスト** (現在進行中、ユーザー操作待ち)
-2. 🔴 ダークモードトグル UI
-3. 🟠 Render Blueprint デプロイ
-4. 🟠 RLS / audit_logs / 自己昇格防止 trigger 実テスト (AT-RLS-1〜3)
-5. 🟠 T-007 名刺取込 UI 着手 (Phase 1 W2)
-6. 🟡 ナレッジHD 現場ヒアリング
-7. 🟡 コスト試算
-8. 🟡 Lighthouse / Playwright e2e 実測
-9. 🟡 ブランド資産確定 (PNG raster / brand guideline)
-10. 🟡 法務・コンプラ文書 (利用規約 / プライバシーポリシー / DPA)
+1. 🟢 ~~実機 Sign-in 完走テスト~~ — 同意 → Calendar OAuth → /onboarding?step=calendar 到達確認済 (2026-05-11)
+2. 🟢 ~~名刺/商談/録画/検索/メンバー の placeholder 撤去~~ — デモ fixture でフルUI見せられる状態 (2026-05-11)
+3. 🔴 デモ fixture → 実 DB 結線 (T-014 / T-016 / T-017)
+4. 🔴 ダークモードトグル UI
+5. 🟠 Render Blueprint デプロイ
+6. 🟠 RLS / audit_logs / 自己昇格防止 trigger 実テスト (AT-RLS-1〜3)
+7. 🟠 T-007 名刺取込 UI 着手 (Phase 1 W2)
+8. 🟡 ナレッジHD 現場ヒアリング
+9. 🟡 コスト試算
+10. 🟡 Lighthouse / Playwright e2e 実測
+11. 🟡 ブランド資産確定 (PNG raster / brand guideline)
+12. 🟡 法務・コンプラ文書 (利用規約 / プライバシーポリシー / DPA)
 
 ---
 

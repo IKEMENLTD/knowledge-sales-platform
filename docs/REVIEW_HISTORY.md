@@ -187,4 +187,78 @@ Round 2 残課題を 1 巡完全解消。
 
 ---
 
+## 2026-05-11 追加レビュー: 5機能ページの placeholder 撤去 (commit f7908b5)
+
+### 対象
+- `/contacts` (新規 / 名刺一覧)
+- `/meetings` (placeholder 撤去 / カンバン)
+- `/recordings` (placeholder 撤去 / 録画リスト)
+- `/search` (placeholder 撤去 / ハイブリッド検索)
+- `/admin/users` (placeholder 撤去 / メンバー管理)
+- `apps/web/src/lib/demo/fixtures.ts` (新規 / 6 メンバー / 7 名刺 / 5 商談 / 3 録画)
+
+### Round 1 (3 並列 reviewer)
+
+| Reviewer | スコープ |
+|---|---|
+| frontend-design | Editorial cohesion / visual hierarchy / cinnabar usage / responsiveness / typography / empty state / motion |
+| UX / copy / IA | Action clarity / 日本語コピー品質 / information scent / first-run grace / affordance / microcopy / trust signals |
+| code-review (a11y + Next.js + RSC) | Type safety / RSC correctness / a11y / reuse / performance / security (XSS) / conventions |
+
+| ページ | frontend-design | UX | code/a11y |
+|---|---|---|---|
+| /contacts | 86 | 88 | 91 |
+| /meetings | 82 | 84 | 90 |
+| /recordings | 84 | 90 | 93 |
+| /search | 88 | 92 | 84 |
+| /admin/users | 85 | 93 | 92 |
+
+### Round 1 で潰した主要バグ
+
+1. № 番号スキーム破綻 — 全ページが top kicker で `№ 02` 固定 (本来は `№ 01`) + sub-section が gap で番号スキップ → 動的通し採番 + skip 空 group
+2. `/contacts` href 三項演算が両分岐で同じ url (`/contacts/[id]/review`) — dead code → 単一 path に集約
+3. `/search` でサジェスト chip が `<button onClick=なし>` で完全 inert → `<Link href=/search?q=...>` 化
+4. `/search` の input が form 無しで Enter 反応せず → `<form action="/search" method="get">` で包む
+5. `/contacts` の検索 box も同じ問題 → `<form action="/contacts">` 化
+6. 捏造 metric: `"0.18 秒"` ハードコード + 「直近の商談 = DEMO_MEETINGS[0]」(fixture 配列は時系列順でない) → 撤去 + `nextUpcomingMeeting(now)` ヘルパー導入
+7. `relativeDayJp(iso, now = new Date())` の default 引数で SSR 揺れリスク → `now` を必須化、admin で `NOW = new Date('2026-05-11')` 固定パス
+8. `/search` の highlight() が per-part で RegExp 再 compile → 事前 compile + `Set` lookup + case-insensitive (`gi`)
+9. `<th>` に `scope="col"` 欠落 + `<caption>` 無し → 全て付与
+10. `bg-amber-500/8` (Tailwind の非標準 opacity step) → `/10` に統一 (cinnabar/8 は意図的に残す)
+11. `recordings/page.tsx` の dark panel `from-foreground/95 → /85` が cinnabar と視覚 weight 競合 → `/85 → /65` に softening
+12. `「台詞検索 ready」` (英語混在) → `「台詞まで検索できます」`、`「文字起こし完了」` → `「文字起こし済」`
+13. AI 要約の `<p>` 内に `<span className="kicker">` を inline 配置 → kicker を sibling `<p>` に昇格
+14. `/admin/users` の各行に `№ 01` バッジ — editorial overkill → 削除、`№` は IA セクションだけに予約
+15. `<tr hover:bg-accent>` が cursor 無しで affordance 違反 → `focus-within:bg-accent` に変更
+16. `「役割を見る」` ボタンが遷移先未実装 → `disabled` + `title="Phase 2 で実装予定"`
+17. `MoreHorizontal` の aria-label が単に「操作メニュー」 → `「招待再送・役割変更・停止」` まで明示
+18. Sticky kanban column header の `top-14` ハードコード → `top-[calc(var(--app-header-h,3.5rem)+env(safe-area-inset-top))]` + AppShell から `--app-header-h: 3.5rem` を露出
+19. 単位の不統一 (`{n} 名` vs `{n}`) → `稼働 {n} 名 ・ 招待中 {n} 名` で統一
+20. Sparkline の `aria-label` が `「トーンの起伏」` のみで意味不明 → `「感情の流れ (上に向かうほど前向きな会話)」`+ カード内に `感情の流れ` kicker 追加
+
+### Round 2 (同 3 並列 reviewer による fix 検証 + 再採点)
+
+| ページ | R1 | R2 |
+|---|---|---|
+| /contacts | 88 | **96** |
+| /meetings | 84 | **96** |
+| /recordings | 90 | **96** |
+| /search | 92 | **97** |
+| /admin/users | 93 | **97** |
+| fixtures.ts | — | **97** |
+
+**両 reviewer ともに `STATUS: GREEN` 宣言。全ページ 95+ 達成。**
+
+### Round 2 後の最終 polish (commit f7908b5 に含む)
+- `search/highlight` の case-sensitivity 修正 (`tokenize → toLowerCase()` + regex `gi`)
+
+### 学び (次回 onboarding 系ページ実装時の知見)
+- **編集的 `№` ナンバリングは IA 軸だけに予約**: KPI カードに `№ 03/04/05` を振ると、その下のセクション (商談カンバン) で番号が破綻する。`№` は「ページ内の主要セクション位置」だけに使う。
+- **`form action="/path" method="get"` は RSC で完全に動く**: client hook 一切不要で URL クエリ更新までできる。検索系 UI の第一選択。
+- **SSR の "現在時刻" は必ず固定**: fixture を使うページでは module-level `const NOW = new Date('YYYY-MM-DDTHH:mm:ss+09:00')` を入れる。`new Date()` のままだとリクエストごとに値が揺れ、Next.js が hydration warning を出す。
+- **架空のメトリック (`0.18秒`, fake count) は本番に流すと信用を破壊する**: デモ画面ですら明示の「デモ」バッジ + 説明を載せる。
+- **Tailwind 任意 opacity (`/8`, `/15`)**: JIT で実体は生成されるが、step の不揃いは可読性を下げる。標準 step (`/10`, `/20`) を優先、ブランド色だけ `/8` のような微妙な opacity を許す。
+
+---
+
 © 2026 IKEMENLTD / Knowledge Holdings
