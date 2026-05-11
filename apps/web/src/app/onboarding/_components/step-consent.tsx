@@ -197,12 +197,11 @@ function Checkbox({
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
         aria-describedby={describedById}
+        style={{ accentColor: 'hsl(var(--cinnabar))' }}
         className={cn(
-          'mt-0.5 size-5 shrink-0 rounded-sm border border-border bg-card cursor-pointer appearance-none',
-          'transition-[border-color,background-color] duration-fast ease-sumi',
-          "checked:bg-cinnabar checked:border-cinnabar checked:bg-[url(\"data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='white'%3E%3Cpath d='M13.485 4.222a.75.75 0 0 1 0 1.06l-6.5 6.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06l2.97 2.97 5.97-5.97a.75.75 0 0 1 1.06 0Z'/%3E%3C/svg%3E\")] checked:bg-no-repeat checked:bg-center checked:bg-[length:14px_14px]",
+          'mt-0.5 size-5 shrink-0 rounded-sm cursor-pointer',
+          'transition-[outline-color] duration-fast ease-sumi',
           'focus-visible:outline-none focus-visible:shadow-focus-ring-cinnabar',
-          'hover:border-foreground/35',
         )}
       />
       <span className="leading-relaxed">{label}</span>
