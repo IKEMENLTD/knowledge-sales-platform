@@ -1,78 +1,144 @@
-import { ArrowRight, Calendar, Check, Database, FileText } from 'lucide-react';
-import { PagePlaceholder } from '@/components/layout/placeholder';
-import { SubmitButton } from '@/components/ui/submit-button';
-import { completeOnboarding } from '@/lib/auth/onboarding';
+import { redirect } from 'next/navigation';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  PRIVACY_BODY,
+  PRIVACY_HASH,
+  TERMS_BODY,
+  TERMS_HASH,
+} from '@/lib/auth/onboarding';
+import { requireUser } from '@/lib/auth/server';
+import {
+  getOnboardingState,
+  PRIVACY_VERSION,
+  TERMS_VERSION,
+  isFullyOnboarded,
+} from '@/lib/onboarding/state';
+import { OnboardingStepper, type Step } from './_components/stepper';
+import { StepCalendar } from './_components/step-calendar';
+import { StepConsent } from './_components/step-consent';
+import { StepDone } from './_components/step-done';
+import { StepSample } from './_components/step-sample';
+
+void TERMS_HASH;
+void PRIVACY_HASH;
 
 export const metadata = { title: 'はじめての設定' };
 
-const STEPS = [
-  {
-    Icon: FileText,
-    title: '利用規約に同意する',
-    body: 'プライバシーポリシーと社内利用規程をご確認ください。同意の記録は安全に保管されます。',
-  },
-  {
-    Icon: Calendar,
-    title: 'Google カレンダーをつなげる',
-    body: '今日の商談予定をホームに自動表示します。Google からの権限要求の画面はその場で確認できます。',
-  },
-  {
-    Icon: Database,
-    title: 'サンプルデータで触ってみる',
-    body: '実際の商談データを入れる前に、ダミーの商談・名刺で操作感を確かめられます。',
-  },
-];
+type SearchParams = { step?: string; error?: string };
 
-export default function OnboardingPage() {
+const STEP_ERROR_TEXT: Record<string, string> = {
+  consent_required: '次へ進むには、両方の項目に同意が必要です。',
+  oauth_failed: 'Google カレンダー連携に失敗しました。もう一度お試しください。',
+  incomplete: '必須ステップが完了していません。',
+};
+
+function resolveActive(
+  step: string | undefined,
+  state: Awaited<ReturnType<typeof getOnboardingState>>,
+): 'consent' | 'calendar' | 'sample' | 'done' {
+  if (step === 'consent' || step === 'calendar' || step === 'sample' || step === 'done') {
+    return step;
+  }
+  if (!state.termsConsentedAt || !state.privacyAcknowledgedAt) return 'consent';
+  if (!state.calendarConnectedAt) return 'calendar';
+  if (!state.sampleDataLoadedAt) return 'sample';
+  return 'done';
+}
+
+function buildStepperState(
+  active: ReturnType<typeof resolveActive>,
+  state: Awaited<ReturnType<typeof getOnboardingState>>,
+): Step[] {
+  const consentDone = !!state.termsConsentedAt && !!state.privacyAcknowledgedAt;
+  const calendarDone = !!state.calendarConnectedAt;
+  const sampleDone = !!state.sampleDataLoadedAt;
+
+  const status = (id: Step['id'], isDone: boolean, optional?: boolean): Step['status'] => {
+    if (isDone) return 'done';
+    if (active === id) return 'active';
+    if (optional && active === 'done') return 'skipped';
+    return 'pending';
+  };
+
+  return [
+    { id: 'consent', label: '同意事項', status: status('consent', consentDone) },
+    { id: 'calendar', label: 'カレンダー', status: status('calendar', calendarDone) },
+    { id: 'sample', label: 'サンプル', status: status('sample', sampleDone, true) },
+    { id: 'done', label: '完了', status: active === 'done' ? 'active' : 'pending' },
+  ];
+}
+
+export default async function OnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const user = await requireUser();
+  const params = await searchParams;
+  const state = await getOnboardingState(user.id);
+
+  if (state.onboardedAt && isFullyOnboarded(state) && params.step !== 'done') {
+    redirect('/dashboard');
+  }
+
+  const active = resolveActive(params.step, state);
+  const stepper = buildStepperState(active, state);
+  const errorMessage = params.error ? STEP_ERROR_TEXT[params.error] : null;
+
   return (
-    <PagePlaceholder
-      scCode="SC-61"
-      kicker="セットアップ / 初回"
-      title="ようこそ。最初に3つだけ設定します。"
-      description="ここで決めたことは、あとから「設定」画面で変更できます。"
-      helpText={`順番に進めると、3〜4分で日常的な使い方の準備が整います。
-途中で止めても自動で保存されます。次回ログインしたときに続きから再開できます。`}
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="mx-auto min-h-dvh max-w-2xl px-6 py-10 md:py-16 outline-none flex flex-col"
     >
-      <ol className="mt-6 space-y-3">
-        {STEPS.map((step, i) => (
-          <li
-            key={step.title}
-            className="flex items-start gap-4 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sumi-sm"
-          >
-            <span
-              aria-hidden
-              className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground/70 font-display font-semibold tabular"
-            >
-              {i + 1}
-            </span>
-            <div className="flex-1">
-              <h3 className="display flex items-center gap-2 text-[0.95rem] font-semibold tracking-crisp">
-                <step.Icon aria-hidden strokeWidth={1.6} className="size-4 text-cinnabar" />
-                {step.title}
-              </h3>
-              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
-            </div>
-            <Check
-              aria-hidden
-              strokeWidth={1.6}
-              className="size-4 shrink-0 text-muted-foreground/40"
-            />
-          </li>
-        ))}
-      </ol>
+      <div className="flex items-baseline justify-between border-t-2 border-foreground pt-3 mb-8 animate-fade-in">
+        <p className="kicker">SC-61 — はじめての設定</p>
+        <p className="kicker">{active === 'done' ? 'COMPLETE' : 'SETUP'}</p>
+      </div>
 
-      {/* 完了ボタン — Phase1 W1 では「触ってみる」のために用意した最小フロー。
-          実機能 (各ステップごとの consent_logs / Calendar incremental auth / sample データ起動)
-          は Phase1 W2-W3 で T-005a / T-018 と統合する。 */}
-      <form action={completeOnboarding} className="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-6 border-t border-border/60">
-        <p className="text-xs text-muted-foreground">
-          ※ Phase1 開発中は仮の「完了」ボタンです。本実装ではここで利用規約・カレンダー連携の正式手続きに進みます。
+      <header className="space-y-2 mb-8 animate-fade-up">
+        <h1 className="display text-3xl md:text-4xl font-semibold tracking-crisp text-balance">
+          ようこそ、{user.fullName ?? user.email?.split('@')[0] ?? ''} さん。
+        </h1>
+        <p className="text-base leading-relaxed text-muted-foreground max-w-prose">
+          ksp を使い始める前に、3 分だけ最初の設定を整えます。途中で止めても、次回ログインしたときに続きから再開できます。
         </p>
-        <SubmitButton type="submit" variant="cinnabar" size="lg" pendingLabel="完了処理中…">
-          ホームへ進む
-          <ArrowRight aria-hidden className="size-4" />
-        </SubmitButton>
-      </form>
-    </PagePlaceholder>
+      </header>
+
+      <OnboardingStepper steps={stepper} />
+
+      {errorMessage ? (
+        <Alert variant="warning" aria-live="polite" className="mb-6 animate-fade-up">
+          <AlertTitle>確認してください</AlertTitle>
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      <section className="animate-fade-up [animation-delay:60ms]">
+        {active === 'consent' ? (
+          <StepConsent
+            termsBody={TERMS_BODY}
+            privacyBody={PRIVACY_BODY}
+            termsVersion={TERMS_VERSION}
+            privacyVersion={PRIVACY_VERSION}
+            showError={params.error === 'consent_required'}
+          />
+        ) : active === 'calendar' ? (
+          <StepCalendar
+            alreadyConnected={!!state.calendarConnectedAt}
+            hasCalendarScope={state.hasCalendarScope}
+          />
+        ) : active === 'sample' ? (
+          <StepSample alreadyLoaded={!!state.sampleDataLoadedAt} />
+        ) : (
+          <StepDone
+            termsAccepted={!!state.termsConsentedAt}
+            privacyAccepted={!!state.privacyAcknowledgedAt}
+            calendarConnected={!!state.calendarConnectedAt}
+            sampleLoaded={!!state.sampleDataLoadedAt}
+          />
+        )}
+      </section>
+    </main>
   );
 }
