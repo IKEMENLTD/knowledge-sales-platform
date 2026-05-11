@@ -3,45 +3,19 @@
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { z } from 'zod';
 import { env } from '@/lib/env';
 import {
-  PRIVACY_HASH,
-  PRIVACY_VERSION,
-  TERMS_HASH,
-  TERMS_VERSION,
-} from '@/lib/onboarding/policy-document';
+  buildConsentRows,
+  evaluateCompletion,
+  isUniqueViolation,
+  mapErrorToCode,
+  parseConsentForm,
+  parseWithdrawForm,
+  safeIp,
+  type AuthContext,
+} from '@/lib/onboarding/core';
+import { captureException } from '@/lib/sentry';
 import { createServerClient } from '@/lib/supabase/server';
-
-type AuthContext = {
-  userId: string;
-  orgId: string;
-  ipAddress: string | null;
-  userAgent: string | null;
-};
-
-class OnboardingError extends Error {
-  constructor(public code: string, message?: string) {
-    super(message ?? code);
-  }
-}
-
-const isPostgresPermissionDenied = (e: unknown) =>
-  typeof e === 'object' && e !== null && 'code' in e && (e as { code: unknown }).code === '42501';
-
-const isUniqueViolation = (e: unknown) =>
-  typeof e === 'object' && e !== null && 'code' in e && (e as { code: unknown }).code === '23505';
-
-function safeIp(h: Headers): string | null {
-  const cf = h.get('cf-connecting-ip');
-  if (cf) return cf;
-  const xff = h.get('x-forwarded-for');
-  if (xff) {
-    const first = xff.split(',')[0]?.trim();
-    if (first) return first;
-  }
-  return h.get('x-real-ip');
-}
 
 async function requireAuthContext(): Promise<AuthContext> {
   const supabase = await createServerClient();
@@ -56,6 +30,10 @@ async function requireAuthContext(): Promise<AuthContext> {
     .eq('id', user.id)
     .maybeSingle();
   if (error || !row?.org_id) {
+    captureException(error ?? new Error('users.org_id missing'), {
+      where: 'requireAuthContext',
+      userId: user.id,
+    });
     redirect('/onboarding?error=org_missing');
   }
 
@@ -68,25 +46,15 @@ async function requireAuthContext(): Promise<AuthContext> {
   };
 }
 
-function mapErrorToParam(e: unknown): string {
-  if (e instanceof OnboardingError) return e.code;
-  if (isPostgresPermissionDenied(e)) return 'permission_denied';
-  if (isUniqueViolation(e)) return 'already_done';
-  return 'save_failed';
+function reportAndRedirect(target: string, action: string, e: unknown): never {
+  captureException(e, { action });
+  redirect(`${target}?error=${mapErrorToCode(e)}`);
 }
 
 // Step 1: 利用規約 + プライバシーポリシー同意
-const ConsentInput = z.object({
-  agree_terms: z.union([z.literal('on'), z.literal('true')]),
-  agree_privacy: z.union([z.literal('on'), z.literal('true')]),
-});
-
 export async function acceptTerms(formData: FormData) {
-  const parsed = ConsentInput.safeParse({
-    agree_terms: formData.get('agree_terms'),
-    agree_privacy: formData.get('agree_privacy'),
-  });
-  if (!parsed.success) {
+  const parsed = parseConsentForm(formData);
+  if (!parsed) {
     redirect('/onboarding?error=consent_required');
   }
 
@@ -96,42 +64,17 @@ export async function acceptTerms(formData: FormData) {
 
   const { error: insertErr } = await supabase
     .from('consent_logs')
-    .upsert(
-      [
-        {
-          user_id: ctx.userId,
-          org_id: ctx.orgId,
-          consent_type: 'terms_of_service',
-          version: TERMS_VERSION,
-          content_hash: TERMS_HASH,
-          accepted_at: now,
-          ip_address: ctx.ipAddress,
-          user_agent: ctx.userAgent,
-        },
-        {
-          user_id: ctx.userId,
-          org_id: ctx.orgId,
-          consent_type: 'privacy_policy',
-          version: PRIVACY_VERSION,
-          content_hash: PRIVACY_HASH,
-          accepted_at: now,
-          ip_address: ctx.ipAddress,
-          user_agent: ctx.userAgent,
-        },
-      ],
-      { onConflict: 'user_id,consent_type,version', ignoreDuplicates: true },
-    );
-  if (insertErr) {
-    redirect(`/onboarding?error=${mapErrorToParam(insertErr)}`);
-  }
+    .upsert(buildConsentRows(ctx, now), {
+      onConflict: 'user_id,consent_type,version',
+      ignoreDuplicates: true,
+    });
+  if (insertErr) reportAndRedirect('/onboarding', 'acceptTerms.consent_logs.upsert', insertErr);
 
   const { error: updateErr } = await supabase
     .from('users')
     .update({ terms_consented_at: now, privacy_acknowledged_at: now })
     .eq('id', ctx.userId);
-  if (updateErr) {
-    redirect(`/onboarding?error=${mapErrorToParam(updateErr)}`);
-  }
+  if (updateErr) reportAndRedirect('/onboarding', 'acceptTerms.users.update', updateErr);
 
   revalidatePath('/onboarding');
   redirect('/onboarding?step=calendar');
@@ -167,6 +110,9 @@ export async function connectCalendar() {
       },
     });
     if (error || !data?.url) {
+      captureException(error ?? new Error('oauth url missing'), {
+        action: 'connectCalendar.oauth',
+      });
       redirect('/onboarding?error=oauth_failed');
     }
     redirect(data.url);
@@ -180,9 +126,7 @@ export async function connectCalendar() {
     })
     .eq('id', ctx.userId)
     .is('calendar_connected_at', null);
-  if (updateErr) {
-    redirect(`/onboarding?error=${mapErrorToParam(updateErr)}`);
-  }
+  if (updateErr) reportAndRedirect('/onboarding', 'connectCalendar.users.update', updateErr);
 
   revalidatePath('/onboarding');
   redirect('/onboarding?step=sample');
@@ -196,9 +140,7 @@ export async function skipCalendar() {
     .from('users')
     .update({ calendar_skipped_at: new Date().toISOString() })
     .eq('id', ctx.userId);
-  if (error) {
-    redirect(`/onboarding?error=${mapErrorToParam(error)}`);
-  }
+  if (error) reportAndRedirect('/onboarding', 'skipCalendar', error);
 
   revalidatePath('/onboarding');
   redirect('/onboarding?step=sample');
@@ -218,16 +160,14 @@ export async function loadSampleData() {
   });
 
   if (seedErr && !isUniqueViolation(seedErr)) {
-    redirect(`/onboarding?error=${mapErrorToParam(seedErr)}`);
+    reportAndRedirect('/onboarding', 'loadSampleData.seed.insert', seedErr);
   }
 
   const { error: updateErr } = await supabase
     .from('users')
     .update({ sample_data_loaded_at: now, sample_skipped_at: null })
     .eq('id', ctx.userId);
-  if (updateErr) {
-    redirect(`/onboarding?error=${mapErrorToParam(updateErr)}`);
-  }
+  if (updateErr) reportAndRedirect('/onboarding', 'loadSampleData.users.update', updateErr);
 
   revalidatePath('/onboarding');
   redirect('/onboarding?step=done');
@@ -241,9 +181,7 @@ export async function skipSampleData() {
     .from('users')
     .update({ sample_skipped_at: new Date().toISOString() })
     .eq('id', ctx.userId);
-  if (error) {
-    redirect(`/onboarding?error=${mapErrorToParam(error)}`);
-  }
+  if (error) reportAndRedirect('/onboarding', 'skipSampleData', error);
 
   revalidatePath('/onboarding');
   redirect('/onboarding?step=done');
@@ -260,25 +198,23 @@ export async function completeOnboarding() {
     )
     .eq('id', ctx.userId)
     .maybeSingle();
-  if (error || !data) {
-    redirect('/onboarding?error=save_failed');
-  }
+  if (error || !data) reportAndRedirect('/onboarding', 'completeOnboarding.users.select', error);
 
-  if (!data.terms_consented_at || !data.privacy_acknowledged_at) {
-    redirect('/onboarding?error=incomplete');
-  }
-
-  if (!data.calendar_connected_at && !data.calendar_skipped_at) {
-    redirect('/onboarding?error=calendar_incomplete');
-  }
+  const ev = evaluateCompletion({
+    terms_consented_at: (data as { terms_consented_at: string | null }).terms_consented_at,
+    privacy_acknowledged_at: (data as { privacy_acknowledged_at: string | null })
+      .privacy_acknowledged_at,
+    calendar_connected_at: (data as { calendar_connected_at: string | null })
+      .calendar_connected_at,
+    calendar_skipped_at: (data as { calendar_skipped_at: string | null }).calendar_skipped_at,
+  });
+  if (!ev.ok) redirect(`/onboarding?error=${ev.code}`);
 
   const { error: updateErr } = await supabase
     .from('users')
     .update({ onboarded_at: new Date().toISOString() })
     .eq('id', ctx.userId);
-  if (updateErr) {
-    redirect(`/onboarding?error=${mapErrorToParam(updateErr)}`);
-  }
+  if (updateErr) reportAndRedirect('/onboarding', 'completeOnboarding.users.update', updateErr);
 
   revalidatePath('/onboarding');
   revalidatePath('/dashboard');
@@ -286,15 +222,9 @@ export async function completeOnboarding() {
 }
 
 // Withdraw (GDPR Art.7(3))
-const WithdrawInput = z.object({
-  consent_type: z.enum(['terms_of_service', 'privacy_policy']),
-});
-
 export async function withdrawConsent(formData: FormData) {
-  const parsed = WithdrawInput.safeParse({
-    consent_type: formData.get('consent_type'),
-  });
-  if (!parsed.success) {
+  const parsed = parseWithdrawForm(formData);
+  if (!parsed) {
     redirect('/settings/privacy?error=invalid_input');
   }
 
@@ -306,14 +236,12 @@ export async function withdrawConsent(formData: FormData) {
     .from('consent_logs')
     .update({ withdrawn_at: now })
     .eq('user_id', ctx.userId)
-    .eq('consent_type', parsed.data.consent_type)
+    .eq('consent_type', parsed.consent_type)
     .is('withdrawn_at', null);
-  if (error) {
-    redirect(`/settings/privacy?error=${mapErrorToParam(error)}`);
-  }
+  if (error) reportAndRedirect('/settings/privacy', 'withdrawConsent.consent_logs.update', error);
 
   const usersPatch =
-    parsed.data.consent_type === 'terms_of_service'
+    parsed.consent_type === 'terms_of_service'
       ? { terms_consented_at: null }
       : { privacy_acknowledged_at: null };
   await supabase.from('users').update(usersPatch).eq('id', ctx.userId);

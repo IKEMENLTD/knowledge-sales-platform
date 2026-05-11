@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/auth/server';
+import { describeOnboardingError } from '@/lib/onboarding/messages';
 import {
   PRIVACY_BODY,
   PRIVACY_HASH,
@@ -24,17 +25,6 @@ export const metadata = { title: 'はじめての設定' };
 export const dynamic = 'force-dynamic';
 
 type SearchParams = { step?: string; error?: string };
-
-const STEP_ERROR_TEXT: Record<string, string> = {
-  consent_required: '次へ進むには、両方の項目に同意が必要です。',
-  oauth_failed: 'Google カレンダー連携に失敗しました。もう一度お試しください。',
-  incomplete: '必須ステップが完了していません。',
-  calendar_incomplete: 'Google カレンダーを連携するか「あとで連携する」を選んでください。',
-  save_failed: '保存に失敗しました。時間をおいて再度お試しください。',
-  permission_denied: '権限が不足しています。管理者にお問い合わせください。',
-  already_done: '既に完了しています。',
-  org_missing: 'アカウント情報が見つかりません。管理者にお問い合わせください。',
-};
 
 function resolveActive(
   step: string | undefined,
@@ -97,7 +87,7 @@ export default async function OnboardingPage({
 
   const active = resolveActive(params.step, state);
   const stepper = buildStepperState(active, state);
-  const errorMessage = params.error ? STEP_ERROR_TEXT[params.error] : null;
+  const errorMessage = describeOnboardingError(params.error);
 
   return (
     <main
