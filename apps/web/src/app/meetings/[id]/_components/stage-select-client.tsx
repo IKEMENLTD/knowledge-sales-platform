@@ -37,8 +37,9 @@ export function StageSelectClient({
     setError(null);
     startTransition(async () => {
       try {
+        // P0-M-01 fix: API は POST のみ (audit を必ず残す設計)。
         const res = await fetch(`/api/meetings/${meetingId}/stage`, {
-          method: 'PATCH',
+          method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ toStage: next }),
         });

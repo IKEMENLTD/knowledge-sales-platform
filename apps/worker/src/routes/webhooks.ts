@@ -207,7 +207,41 @@ webhooks.post('/webhooks/zoom', async (c) => {
     }
 
     // 7-c) pgmq enqueue: 本処理 (download → transcribe → embed) は worker consumer に委譲。
+    //
+    // Round2 fix: meetingDbId が無いと recordings 行を作れず、worker 側でも
+    //   `recordings.meeting_id = $1` の lookup が空振りして video_storage_key も
+    //   何も保存されず enqueue が事実上 no-op になる (永久にゴミだけ撒く)。
+    //   そのため meetingDbId が null のときは enqueue 自体を見送り、reconcile 経路
+    //   (別 job が meetings 行を作ってから手動 enqueue) に委ねる。Zoom には
+    //   200 + deferred:true を返して再送ループを止める。
     const reqId = c.get('reqId');
+    if (!meetingDbId) {
+      reqLog.warn(
+        { zoomMeetingId, zoomRecordingUuid },
+        'meetings row not found — deferring pgmq enqueue (reconcile job will pick this up)',
+      );
+      // audit_logs だけ書いて 200 で返す
+      void appendAudit({
+        orgId: DEFAULT_ORG_ID,
+        actorUserId: null,
+        action: 'create',
+        resourceType: 'meeting',
+        resourceId: null,
+        payload: {
+          webhook: 'zoom.recording_completed',
+          zoomMeetingId,
+          zoomRecordingUuid,
+          eventTs: parsed.data.event_ts ?? null,
+          deferred: true,
+          reason: 'meeting_not_found',
+          reqId,
+        },
+        ipAddress: ip === 'unknown' ? null : ip,
+        userAgent: c.req.header('user-agent') ?? null,
+      });
+      return c.json({ received: true, deferred: true, reason: 'meeting_not_found' });
+    }
+
     await pgmqSend('process_recording', {
       zoomMeetingId,
       zoomRecordingUuid,

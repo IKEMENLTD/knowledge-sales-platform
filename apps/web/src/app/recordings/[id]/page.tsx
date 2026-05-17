@@ -9,6 +9,7 @@ import {
   formatDuration,
 } from '@/lib/demo/fixtures';
 import { createServerClient } from '@/lib/supabase/server';
+import { STORAGE_BUCKETS } from '@ksp/shared';
 import { ArrowLeft, Mic, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import type { CommitmentItem, NextActionItem } from './_components/commitments-panel';
@@ -241,13 +242,39 @@ function fixtureToViewModel(rec: DemoRecording): DetailViewModel {
   };
 }
 
+/**
+ * recordings.video_storage_key (Supabase Storage object path) から
+ * 短命の signed URL を発行する。worker (recording-download.ts) は
+ * video_storage_key にしか書かないため、旧来の video_storage_url 列を
+ * 読むだけでは null になり <video> が再生不可になっていた (Round2 P0 bug)。
+ *
+ * TTL は 5 分 (300 秒)。ページが SSR される毎に発行する。
+ * 失敗 (bucket 不在 / RLS 拒否 / key 不在) は null フォールバックで
+ * RecordingPlayer 側のプレースホルダ表示に任せる。
+ */
+async function createRecordingSignedUrl(
+  supabase: Awaited<ReturnType<typeof createServerClient>>,
+  storageKey: string | null,
+): Promise<string | null> {
+  if (!storageKey) return null;
+  try {
+    const { data, error } = await supabase.storage
+      .from(STORAGE_BUCKETS.recordings)
+      .createSignedUrl(storageKey, 300);
+    if (error || !data?.signedUrl) return null;
+    return data.signedUrl;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchFromSupabase(id: string): Promise<DetailViewModel | null> {
   try {
     const supabase = await createServerClient();
     const { data: rec, error } = await supabase
       .from('recordings')
       .select(
-        'id,meeting_id,video_storage_url,video_duration_seconds,transcript_full,transcript_segments,summary,key_points,customer_needs,objections,next_actions,commitments,sentiment_timeline,sensitivity,created_at',
+        'id,meeting_id,video_storage_url,video_storage_key,video_duration_seconds,transcript_full,transcript_segments,summary,key_points,customer_needs,objections,next_actions,commitments,sentiment_timeline,sensitivity,created_at',
       )
       .eq('id', id)
       .maybeSingle();
@@ -316,21 +343,47 @@ async function fetchFromSupabase(id: string): Promise<DetailViewModel | null> {
       });
     }
 
-    // meeting 名 (best-effort)
+    // meeting 名 + 会社名 + owner 名 (best-effort)
+    // Round1 で /meetings/page.tsx を直したのと同じパターン:
+    //   meetings.contact_id → contacts.company_id → companies.name
+    // meetings / contacts いずれにも `company_name` 列は存在しないため、
+    // 必ず companies を引く。旧実装は `meetings.company_name` を select して
+    // 常に undefined → "—" 固定だった (Round2 P0 bug)。
     let meetingTitle = '商談録画';
     let meetingCompany = '—';
     let ownerName: string | null = null;
     if (meetingId) {
       const mtgRes = await supabase
         .from('meetings')
-        .select('title,company_name,owner_user_id')
+        .select('title,contact_id,owner_user_id')
         .eq('id', meetingId)
         .maybeSingle();
       if (!mtgRes.error && mtgRes.data) {
         const m = mtgRes.data as Record<string, unknown>;
         meetingTitle = (m.title as string | undefined) ?? meetingTitle;
-        meetingCompany = (m.company_name as string | undefined) ?? meetingCompany;
+        const contactId = m.contact_id as string | undefined;
         const ownerId = m.owner_user_id as string | undefined;
+        if (contactId) {
+          const contactRes = await supabase
+            .from('contacts')
+            .select('company_id')
+            .eq('id', contactId)
+            .maybeSingle();
+          const companyId = !contactRes.error
+            ? ((contactRes.data as { company_id: string | null } | null)?.company_id ?? null)
+            : null;
+          if (companyId) {
+            const companyRes = await supabase
+              .from('companies')
+              .select('name')
+              .eq('id', companyId)
+              .maybeSingle();
+            if (!companyRes.error && companyRes.data) {
+              meetingCompany =
+                (companyRes.data as { name: string | null }).name ?? meetingCompany;
+            }
+          }
+        }
         if (ownerId) {
           const userRes = await supabase
             .from('users')
@@ -347,6 +400,15 @@ async function fetchFromSupabase(id: string): Promise<DetailViewModel | null> {
     const durationSec = (recRow.video_duration_seconds as number | undefined) ?? 0;
     const sensitivity = (recRow.sensitivity as string | undefined) ?? 'internal';
 
+    // 動画 URL の解決順序:
+    //   1) recordings.video_storage_key (worker が書く) → 5 分 signed URL を発行
+    //   2) (後方互換) recordings.video_storage_url が直接 URL を持っていれば使う
+    //   3) どちらも無ければ null → RecordingPlayer がプレースホルダ表示に倒す
+    const storageKey = (recRow.video_storage_key as string | undefined) ?? null;
+    const signedUrl = await createRecordingSignedUrl(supabase, storageKey);
+    const directUrl = (recRow.video_storage_url as string | undefined) ?? null;
+    const videoUrl = signedUrl ?? directUrl;
+
     return {
       recordingId: recRow.id as string,
       meetingTitle,
@@ -354,7 +416,7 @@ async function fetchFromSupabase(id: string): Promise<DetailViewModel | null> {
       ownerName,
       recordedAtIso: (recRow.created_at as string | undefined) ?? new Date().toISOString(),
       durationSec,
-      videoUrl: (recRow.video_storage_url as string | undefined) ?? null,
+      videoUrl,
       posterUrl: null,
       sensitivityLabel: SENSITIVITY_LABELS[sensitivity] ?? sensitivity,
       summary: (recRow.summary as string | undefined) ?? null,

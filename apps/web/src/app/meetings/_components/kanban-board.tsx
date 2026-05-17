@@ -104,10 +104,12 @@ export function KanbanBoard({ meetings, isFixtureMode = false }: KanbanBoardProp
       }
 
       try {
+        // P0-M-01 fix: API 側は POST + { toStage } 受け (audit を必ず残す設計)。
+        // 従来 PATCH + { stage } で送っていたため 405 / 422 で全壊していた。
         const res = await fetch(`/api/meetings/${id}/stage`, {
-          method: 'PATCH',
+          method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ stage: to }),
+          body: JSON.stringify({ toStage: to }),
         });
         if (res.ok) {
           toast.success(`${STAGE_LABELS[to]} に移動しました`);
@@ -119,7 +121,7 @@ export function KanbanBoard({ meetings, isFixtureMode = false }: KanbanBoardProp
           });
           return false;
         }
-        throw new Error(`PATCH /api/meetings/${id}/stage failed: ${res.status}`);
+        throw new Error(`POST /api/meetings/${id}/stage failed: ${res.status}`);
       } catch (err) {
         // ロールバック
         setGroups(prev);

@@ -1,0 +1,25 @@
+# 28_round2_simulation_polish
+
+| v2.3再シミュ残課題の対応(v2.4) |  |  |  |  |  |  |  |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 再演者ラウンドで発見されたcrit 1+partial 4+新規mod 5+min 9 の対応 |  |  |  |  |  |  |  |
+| # | Severity | ID | Scene | 摩擦 | 対応(v2.4) | 関連 | ステータス |
+| 1 | CRIT | NF-S4-1 | S4 | verbal_logged_by_owner時のaudio_proof_segment_idがpre_consent_bufferのpurgeと循環依存 | pre_consent_audio_buffersテーブル新設(meeting_id,start,end,storage_url,purge_at,verbal_proof_locked DEFAULT false,locked_until)。verbal同意取得時は該当バッファをverbal_proof_locked=trueでpurge48h保留→audio_proof_segment_idで固定参照→保持期間はretention_policiesに連動。q_pre_consent_buffer_purgeはlocked=falseのみ対象に修正 | 16_compliance_legal,03_data_model,q_pre_consent_buffer_purge | 対応 |
+| 2 | MOD | F-S7-4(再) | S7 | コーチ自動共有がopt-outデフォルトで新人渡辺の心理的安全性低下 | デフォルトopt-in必須(roleplay_consent.coach_share=opt_in)に変更。初回起動時に明示同意モーダル(reusable_for_review_only/team_share_blur_name/full_share)。SC-21に共有範囲インジケータ常駐(誰に・どこまで)。owner_self_share優先 | SC-21,roleplay_consent(新),share_safety_filters | 対応 |
+| 3 | MOD | F-S11-3(再) | S11 | legal_hold時の削除依頼で3者承認(法務+情シス+本人代理人)経路がdual_approverのみ | data_deletion_requestsにlegal_hold_override_approver_id+legal_hold_override_reason+subject_representative_id追加。SC-60aに3者承認モーダル(法務+情シス+代理人)+各役割の承認順序enforce(法務→情シス→代理人)+承認ログを audit_logs+chain of custody | SC-60a,data_deletion_requests | 対応 |
+| 4 | MIN | F-S13-4(再) | S13 | speaker_status=pendingの発話がchat_citationに混入時、UI上の警告未明記 | chat_citationsにspeaker_confidence(numeric)追加。SC-72/SC-43のcitation cardでpending時は破線枠+警告アイコン+aria-label='話者未確定'。confidence<0.6で警告色、<0.4で表示抑制(citation降格) | chat_citations,SC-72,SC-43,21_a11y_i18n | 対応 |
+| 5 | MIN | F-S14-4(再) | S14 | Zoom historical retryのretry_count上限/backoff/DLQ未明記 | q_legacy_import_zoom: max_retries=3, exponential backoff(2^n min, max 16min), 3失敗→q_legacy_import_dlqへrouting。SC-86改修(/admin/import-dlq可視化+手動再実行+CSVエクスポート) | q_legacy_import_zoom,q_legacy_import_dlq(新),SC-86改修 | 対応 |
+| 6 | MOD | NF-S2-1 | S2 | 佐々木が出張時OOO登録忘れ→dynamic timeoutが通常=4hで適用される | q_internal_invite_dynamic_timeout に heuristic 追加: (a) Gmail内のflight確認メール検出(72h以内, 'eチケット|搭乗|フライト'パターン), (b) 同期間にcalendar_holdsが集中, (c) 手動awayトグル(SC-66に1タップ)。ヒット時はtimeout=24hに動的延長 | q_internal_invite_dynamic_timeout,SC-66 | 対応 |
+| 7 | MOD | NF-S3-1 | S3 | convert_to_visit_meeting時に未登録CCの住所/電話が無く訪問計画作れない | AP-64レスポンスにrequired_followup_fields[](address/phone/...)を追加。convert_to_visit_meeting選択時はSC-41でcontact化prompt必須化(住所/電話入力フォーム)。未充足時はsuggested_actionの実行を保留 | AP-64,SC-41 | 対応 |
+| 8 | MOD | NF-S5-1 | S5 | インライン編集連発でq_derived_artifacts_regenが多発しper-meeting cap $0.50に到達しやすい | q_derived_artifacts_regenにdebounce 60秒+楽観ロックでOCC。derived_artifacts_status.regen_debounce_until/regen_lock_version追加。連続編集は最後の1回だけ走る。コスト超過時はadminにSlack | q_derived_artifacts_regen,derived_artifacts_status | 対応 |
+| 9 | MOD | NF-UX-1 | 横断 | share[token]閲覧時、PDFはen-USだがvoice_memo transcriptは日本語のまま | voice_memo_transcript_translationsテーブル(memo_id,locale,text,quality='machine'|'human')。AP-139改で閲覧時オンザフライ翻訳(Anthropic/DeepL選択可)。share/[token]に machine_translated_en バッジ+quality_disclaimer表示 | voice_memo_transcript_translations(新),AP-139,SC-31 | 対応 |
+| 10 | MOD | NF-S11-1(統合) | S11 | 訴訟係属時の代理人承認ログ未保存 | F-S11-3再 と統合(同行で対応) | - | 対応(統合) |
+| 11 | MIN | NF-S2-2 | S2 | hold_visibility='attendees_dimmed'はGoogle Calendar APIが個別attendee transparency切替に未対応 | 設計変更: hold_visibility='attendees_dimmed'時は同席者へinvite送信せずownerカレンダーのみtransparent予定。確定時にinvite発行。06_external_integrationsにGoogle Calendar API制約を明記 | calendar_holds,06_external_integrations | 対応 |
+| 12 | MIN | NF-S4-2 | S4 | 録画停止アラートのSMS送信が本人にも飛んで冗長(本人が誤停止の場合) | q_zoom_recording_pause_alert payload paused_by_user_idで分岐: 本人=Pushのみ, admin=Push+SMS。23_observability_alerts更新 | q_zoom_recording_pause_alert,23_observability_alerts | 対応 |
+| 13 | MIN | NF-S5-2 | S5 | former_employee警告とマスキング済表示の色衝突 | 02_screens 表示順序ルール列を追加。優先順位: former_employee警告(黄ボーダー) > マスキング済(灰アイコン) > 通常。aria-describedbyで両方読み上げ | 02_screens(改),SC-43,SC-46 | 対応 |
+| 14 | MIN | NF-S8-1 | S8 | AI予測信頼区間が低い時の鈴木の判断基準/グレー表示閾値曖昧 | AT-S8に信頼区間しきい値明記: <0.6=警告(灰背景+ヒント), <0.4=非表示(別タブ『要レビュー』)。運用ガイドにbest practice追加 | 24_acceptance_test_matrix,SC-25/49 | 対応 |
+| 15 | MIN | NF-S9-1 | S9 | contract_special_terms taxonomyの新カテゴリ追加運用フロー(誰が承認/版管理)未定義 | 14_state_machinesにtaxonomy_change状態(proposed→legal_review→admin_approve→active→archived)追加。承認は法務+情シス二段。version列+changelog | contract_special_terms_taxonomy(新),14_state_machines | 対応 |
+| 16 | MIN | NF-S10-1 | S10 | PITR復旧申請のRTO/RPO目安がSC-78に未表示 | SC-78にRTO目安(<=4h)+RPO(15min)+ジョブキュー混雑状況を表示。AP-129にestimateエンドポイント追加(eta_min返却) | SC-78,AP-129改 | 対応 |
+| 17 | MIN | NF-S13-1(統合) | S13 | speaker_confidence表示 | F-S13-4再 と統合(同行で対応) | - | 対応(統合) |
+| 18 | MIN | NF-S14-1(統合) | S14 | Zoom DLQ routing | F-S14-4再 と統合 | - | 対応(統合) |
+| 19 | MIN | NF-S7-1(統合) | S7 | コーチ自動共有 opt-in | F-S7-4再 と統合 | - | 対応(統合) |

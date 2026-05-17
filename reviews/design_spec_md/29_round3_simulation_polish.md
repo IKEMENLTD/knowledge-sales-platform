@@ -1,0 +1,16 @@
+# 29_round3_simulation_polish
+
+| v2.4 R3再シミュ minor 10件の対応(v2.5) |  |  |  |  |  |  |  |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| R3再演者で発見されたminor 10件すべて反映 |  |  |  |  |  |  |  |
+| # | Severity | ID | Scene | 摩擦 | 対応(v2.5) | 関連 | ステータス |
+| 1 | MIN | NF3-S14-1 | S14 | SC-86が /settings/export のまま、/admin/import-dlq の独立画面定義なし | SC-126 /admin/import-dlq を独立画面として新設(DLQTable+RetryButton+CSVExportButton+aria-label)。SC-86を /settings/export 専用に戻し、参照を整理 | 02_screens(SC-126新設,SC-86整理) | 対応 |
+| 2 | MIN | NF3-UX-2 | 横断 | voice_memo human翻訳の発注フロー/SLA/エスカレUI未定義 | AP-139改v2.5でレスポンスに{can_request_human:true, sla_business_days:5}追加。SC-31 share に『人手翻訳を依頼』リンク。q_voice_memo_translate_human ジョブ新設(SLA 5営業日)。voice_memo_transcript_translations.translation_status(machine|human_requested|human_in_progress|human_done) | AP-139改,SC-31改,q_voice_memo_translate_human(新) | 対応 |
+| 3 | MIN | NF3-A11Y-1 | 横断 | speaker_confidence動的更新時のaria-live通知方針未定義 | 21_a11y_i18nに『speaker_confidence更新時 aria-live=politeで"話者確度X%に更新"』追記。SC-72/SC-43のlive region表に追加。再話者識別ジョブ完了で通知発火 | 21_a11y_i18n,SC-72,SC-43 | 対応 |
+| 4 | MIN | NF3-S11-1 | S11 | 代理人KYC(POA+本人免許)が identity_verification_method と別建てで未定義 | AP-141にrepresentative_identity_verification_method(power_of_attorney_doc_url 必須+representative_id_doc_url)追加。SC-60a の IdentityVerifyPanel に代理人タブ。16_compliance_legal SOPに『POA原本写し+本人免許写し』必須を明記 | AP-141改,SC-60a改,16_compliance_legal | 対応 |
+| 5 | MIN | NF3-S2-1 | S2 | away heuristic Gmail flight検出が72h窓+ja正規表現中心、英文/中文出張メール網羅性不明 | q_away_heuristic_detectのregex/LLM分類器にen-US/zh-CN出張テンプレ追加(itinerary/boarding pass/出差通知/差旅等)。confidence>=0.7閾値明記。AT-S2-AwayHeuristicに多言語ケース追加 | q_away_heuristic_detect改,AT-S2-AwayHeuristic | 対応 |
+| 6 | MIN | NF3-S5-1 | S5 | debounce 60s中の田中『今すぐ再生成』手動上書きの優先制御未明記 | AP-137改/AP-148(/api/recordings/[id]/regen-now)で manual_force_regen=true を受付、debounce無視+ロック取得失敗時UIに残り秒数表示。AT-S5-Debounceに手動上書きケース追加 | AP-148(新),SC-11改,AT-S5-Debounce | 対応 |
+| 7 | MIN | NF3-S4-1 | S4 | pre_consent_buffer locked_until満了後のverbal_proof再延長手順が未定義 | 14_state_machines verbal_proof_locked状態に extend(+48h)遷移追加。最大3回まで(extension_count=3 hard limit)。超過時は自動purge+admin通知+chain of custody注釈 | 14_state_machines,pre_consent_audio_buffers改 | 対応 |
+| 8 | MIN | NF3-S7-1 | S7 | roleplay_consent downgrade時の既存共有済みクリップの遡及マスキング条件未記述 | 14_state_machines roleplay_consent downgrade(full_share→team_blurred)時の遡及処理ルール追記: 既存視聴履歴は保持(audit_logsに記録) / 未視聴クリップのみ再ぼかし(再エンコードq_roleplay_clip_reencode起動)。AP-146改responseにaffected_clip_count返却 | 14_state_machines,AP-146改,q_roleplay_clip_reencode(新) | 対応 |
+| 9 | MIN | NF3-S8-1 | S8 | 信頼区間<0.4の『要レビュー』退避タブ累積バックログ未表示 | 23_observability_alerts に review_backlog_per_manager 指標追加(週次)。SC-25 にバックログバッジ表示(部下別×退避件数+最古経過日数) | SC-25改,23_observability_alerts,review_backlog_metrics(新) | 対応 |
+| 10 | MIN | NF3-S9-1 | S9 | taxonomy archived遷移後の既存契約データ参照整合性未明記 | 14_state_machines taxonomy_change archive時のorphan_contract_handling追加: (a)参照は読取専用で保持(immutable)、(b)新規作成は不可、(c)q_taxonomy_migration ジョブで代替版へreplace可(オプション)。contract_special_terms_taxonomy.replaced_by_id 追加 | 14_state_machines,contract_special_terms_taxonomy改,q_taxonomy_migration(新) | 対応 |

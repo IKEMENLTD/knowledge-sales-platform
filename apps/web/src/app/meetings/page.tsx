@@ -138,7 +138,7 @@ async function loadFromDb(sp: SP): Promise<{
 } | null> {
   try {
     const supabase = await createServerClient();
-    const stageQ = readQ(sp, 'stage');
+    // P0-M-03 fix: 旧 kanban-stage URL クエリ `stage` は廃止。`dealStatus` のみで絞り込む。
     const dealStatusQ = readQ(sp, 'dealStatus');
     const ownerQ = readQ(sp, 'ownerUserId');
     const q = readQ(sp, 'q');

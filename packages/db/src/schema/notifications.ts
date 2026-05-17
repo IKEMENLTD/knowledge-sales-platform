@@ -1,3 +1,4 @@
+import { notificationType as sharedNotificationType } from '@ksp/shared';
 import { sql } from 'drizzle-orm';
 import { boolean, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { orgIdColumn } from './_shared.js';
@@ -6,15 +7,14 @@ import { users } from './users.js';
 /**
  * 通知タイプ — A-H-03 指摘で enum 化。
  * 14_state_machines の transition で参照される識別子と一致させる。
+ *
+ * cross-cutting P0-2 fix:
+ *   `@ksp/shared` (constants.ts) の `notificationType` と SQL CHECK
+ *   (`0018_notifications_type_check.sql`) と drizzle schema の 3 経路で値が
+ *   ズレる事故を防ぐため、shared を single source of truth として import し
+ *   re-export する。値そのものは shared 側で `as const` 配列で固定。
  */
-export const notificationType = [
-  'recording_ready',
-  'reply_received',
-  'handoff_pending',
-  'sync_failed',
-  'mention',
-  'admin_action',
-] as const;
+export const notificationType = sharedNotificationType;
 export type NotificationType = (typeof notificationType)[number];
 
 export const notifications = pgTable(

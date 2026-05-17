@@ -13,7 +13,14 @@
 import { type DBSchema, type IDBPDatabase, openDB } from 'idb';
 
 export const DB_NAME = 'ksp-offline';
-export const DB_VERSION = 1;
+/**
+ * v=1 → v=2: cross-cutting P0-1 で `kv` ストアを追加。
+ *
+ * 同じ DB (`ksp-offline`) を `db.ts` と `indexeddb.ts` の双方が openDB するため、
+ * version を分けると VersionError が出る。共通 version + 共通 upgrade hook で
+ * queue/meta/kv の 3 store を idempotent に作る。
+ */
+export const DB_VERSION = 2;
 
 export type QueueKind = 'business_card' | 'note' | 'recording_chunk';
 
@@ -30,6 +37,17 @@ export type QueueRecord = {
   lastError?: string | null;
 };
 
+/**
+ * KV ストアのエントリ型。`indexeddb.ts` の `OfflineStore` API がこの shape を扱う。
+ * cross-cutting P0-1 で導入。
+ */
+export type KvRecord = {
+  id: string;
+  data: unknown;
+  expiresAt: number | null;
+  updatedAt: number;
+};
+
 interface KspDB extends DBSchema {
   queue: {
     key: string;
@@ -39,6 +57,10 @@ interface KspDB extends DBSchema {
   meta: {
     key: string;
     value: { id: string; wrappedKey: ArrayBuffer; updatedAt: number };
+  };
+  kv: {
+    key: string;
+    value: KvRecord;
   };
 }
 
@@ -50,14 +72,23 @@ export function getOfflineDB(): Promise<IDBPDatabase<KspDB>> {
   }
   if (!_db) {
     _db = openDB<KspDB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains('queue')) {
-          const queue = db.createObjectStore('queue', { keyPath: 'id' });
-          queue.createIndex('by-kind', 'kind');
-          queue.createIndex('by-createdAt', 'createdAt');
+      upgrade(db, oldVersion) {
+        // v=1: queue + meta を作成 (既存ユーザでは作成済)。
+        if (oldVersion < 1) {
+          if (!db.objectStoreNames.contains('queue')) {
+            const queue = db.createObjectStore('queue', { keyPath: 'id' });
+            queue.createIndex('by-kind', 'kind');
+            queue.createIndex('by-createdAt', 'createdAt');
+          }
+          if (!db.objectStoreNames.contains('meta')) {
+            db.createObjectStore('meta', { keyPath: 'id' });
+          }
         }
-        if (!db.objectStoreNames.contains('meta')) {
-          db.createObjectStore('meta', { keyPath: 'id' });
+        // v=2: kv ストアを追加 (cross-cutting P0-1)。
+        if (oldVersion < 2) {
+          if (!db.objectStoreNames.contains('kv')) {
+            db.createObjectStore('kv', { keyPath: 'id' });
+          }
         }
       },
     });

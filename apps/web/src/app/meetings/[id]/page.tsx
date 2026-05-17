@@ -241,33 +241,56 @@ async function loadFromSupabase(id: string): Promise<DetailView | null> {
   }
 
   // attendee contacts
+  // P0-M-05 fix: 実 schema は contacts.name + contacts.title + contacts.company_id → companies.name JOIN。
+  // 旧コードは full_name / job_title / company_name を直接 SELECT して常に PostgREST エラー → fixture fallback 化していた。
   const attendeeContacts = contactIds.length
     ? ((
         await supabase
           .from('contacts')
-          .select('id,full_name,job_title,company_name,email')
+          .select('id,name,title,company_id,email')
           .in('id', contactIds)
       ).data ?? [])
     : [];
 
-  // 同社の関連 contacts (会社名でゆる検索)
-  const companyName =
-    typeof meeting.company_name === 'string'
-      ? meeting.company_name
-      : ((attendeeContacts[0] as Record<string, unknown> | undefined)?.company_name as
-          | string
-          | undefined);
+  // 会社名は contact.company_id 経由で companies テーブルから引く。
+  const attendeeCompanyIds = (attendeeContacts as Record<string, unknown>[])
+    .map((c) => c.company_id)
+    .filter((v): v is string => typeof v === 'string');
 
+  // 同社の関連 contacts: 先頭 attendee の company_id を基点に絞り込み (会社名ではなく id で結合)。
+  const baseCompanyId = attendeeCompanyIds[0] ?? null;
   let relatedContactsRows: Record<string, unknown>[] = [];
-  if (companyName) {
+  if (baseCompanyId) {
     const { data } = await supabase
       .from('contacts')
-      .select('id,full_name,job_title,company_name,email')
-      .eq('company_name', companyName)
+      .select('id,name,title,company_id,email')
+      .eq('company_id', baseCompanyId)
       .neq('id', contactIds.length ? contactIds[0] : '00000000-0000-0000-0000-000000000000')
       .limit(20);
     relatedContactsRows = (data as Record<string, unknown>[] | null) ?? [];
   }
+
+  // 会社マスタ (id → name) を attendee + related の company_id 合算で 1 度に取得。
+  const allCompanyIds = [
+    ...new Set(
+      [
+        ...attendeeCompanyIds,
+        ...relatedContactsRows
+          .map((c) => c.company_id)
+          .filter((v): v is string => typeof v === 'string'),
+      ].filter(Boolean),
+    ),
+  ];
+  const companyRows = allCompanyIds.length
+    ? (((await supabase.from('companies').select('id,name').in('id', allCompanyIds)).data ??
+        []) as Record<string, unknown>[])
+    : [];
+  const companyNameById = new Map(
+    companyRows.map((co) => [co.id as string, (co.name as string | null) ?? null]),
+  );
+  const companyName: string | undefined = baseCompanyId
+    ? (companyNameById.get(baseCompanyId) ?? undefined)
+    : undefined;
 
   // recordings (この meeting に紐づく)
   const { data: recordingsRows } = await supabase
@@ -278,18 +301,22 @@ async function loadFromSupabase(id: string): Promise<DetailView | null> {
     .eq('meeting_id', id);
 
   // stage transitions (テーブルが無い環境ではエラー無視)
+  // P0-M-04 fix: 実 schema は `created_at` / `changed_by_user_id` (0036_meetings_phase2.sql)。
+  // 旧コードは `changed_at` / `changed_by` を SELECT していて常に PostgREST エラー → 空表示化していた。
   let transitions: StageTransition[] = [];
   try {
     const { data: trans } = await supabase
       .from('meeting_stage_transitions')
-      .select('id,from_stage,to_stage,reason,changed_by,changed_at')
+      .select(
+        'id,from_stage,to_stage,reason,from_deal_status,to_deal_status,changed_by_user_id,created_at',
+      )
       .eq('meeting_id', id)
-      .order('changed_at', { ascending: false });
+      .order('created_at', { ascending: false });
     if (trans) {
       const changerIds = Array.from(
         new Set(
           trans
-            .map((t) => (t as Record<string, unknown>).changed_by)
+            .map((t) => (t as Record<string, unknown>).changed_by_user_id)
             .filter((v): v is string => typeof v === 'string'),
         ),
       );
@@ -306,9 +333,11 @@ async function loadFromSupabase(id: string): Promise<DetailView | null> {
         id: t.id as string,
         fromStage: (t.from_stage as MeetingStage | null) ?? null,
         toStage: t.to_stage as MeetingStage,
-        changedAt: typeof t.changed_at === 'string' ? t.changed_at : new Date().toISOString(),
+        changedAt: typeof t.created_at === 'string' ? t.created_at : new Date().toISOString(),
         changedByName:
-          typeof t.changed_by === 'string' ? (nameById.get(t.changed_by) ?? null) : null,
+          typeof t.changed_by_user_id === 'string'
+            ? (nameById.get(t.changed_by_user_id) ?? null)
+            : null,
         reason: (t.reason as string | null) ?? null,
       }));
     }
@@ -364,20 +393,23 @@ async function loadFromSupabase(id: string): Promise<DetailView | null> {
     summary: (r.summary as string | null) ?? null,
   }));
 
+  // P0-M-05 fix: contacts は (name, title, company_id) を読み、companyName は companies JOIN で解決する。
   const relatedContacts: RelatedContact[] = [
     ...(attendeeContacts as Record<string, unknown>[]).map((c) => ({
       id: c.id as string,
-      fullName: (c.full_name as string | null) ?? '名前未設定',
-      title: (c.job_title as string | null) ?? null,
-      companyName: (c.company_name as string | null) ?? null,
+      fullName: (c.name as string | null) ?? '名前未設定',
+      title: (c.title as string | null) ?? null,
+      companyName:
+        typeof c.company_id === 'string' ? (companyNameById.get(c.company_id) ?? null) : null,
       email: (c.email as string | null) ?? null,
       isAttendee: true,
     })),
     ...relatedContactsRows.map((c) => ({
       id: c.id as string,
-      fullName: (c.full_name as string | null) ?? '名前未設定',
-      title: (c.job_title as string | null) ?? null,
-      companyName: (c.company_name as string | null) ?? null,
+      fullName: (c.name as string | null) ?? '名前未設定',
+      title: (c.title as string | null) ?? null,
+      companyName:
+        typeof c.company_id === 'string' ? (companyNameById.get(c.company_id) ?? null) : null,
       email: (c.email as string | null) ?? null,
       isAttendee: false,
     })),

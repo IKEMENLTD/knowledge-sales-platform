@@ -27,8 +27,9 @@ import { pgmqDelete, pgmqRead, type PgmqRow } from '../lib/pgmq.js';
  *   3. (sourceType, sourceId) から org_id / sensitivity / visibility / owner を解決
  *   4. chunks が無い (text only fallback) なら 800-token chunker + 100 overlap で分割
  *   5. embedTexts() で 50 件ずつ batch embedding
- *   6. knowledge_embeddings に bulk INSERT (metadata: { sensitivity, visibility,
- *      owner_user_id, source_id, recording_id?, meeting_id?, start_sec? })
+ *   6. knowledge_embeddings に bulk UPSERT (metadata: { sensitivity, visibility,
+ *      owner_user_id, source_id, recording_id?, meeting_id?, start_sec? })。
+ *      onConflict=(org_id,source_type,source_id,chunk_index) で再投入冪等 (E-1)
  *   7. cost-guard: spendUsd > COST_CAPS.perMeetingUsd で MEETING_COST_CAP_EXCEEDED throw
  *   8. pgmq.delete で ack。失敗時は visibility timeout で自動 retry を待つ。
  *
@@ -281,7 +282,15 @@ export async function processEmbedJob(payload: GenerateEmbeddingsPayload): Promi
     throw err;
   }
 
-  // 3) bulk INSERT
+  // 3) bulk UPSERT
+  //
+  // migration 0040_bm25_search.sql で
+  //   UNIQUE (org_id, source_type, source_id, chunk_index) WHERE deleted_at IS NULL
+  // を追加。再投入 (handoff edit / recording reprocess) で onConflict すれば
+  // 同一 chunk_index は上書きされ、重複が知識ベースに蓄積しない (search.md E-1)。
+  //
+  // 既に soft-delete された (deleted_at IS NOT NULL) 行とは UNIQUE が衝突
+  // しないので、partial index で OK。
   const rows = expanded.map((c, i) => ({
     org_id: source.orgId,
     source_type: payload.sourceType,
@@ -292,11 +301,16 @@ export async function processEmbedJob(payload: GenerateEmbeddingsPayload): Promi
     metadata: c.metadata,
   }));
 
-  const { error: insertErr } = await supabaseAdmin.from('knowledge_embeddings').insert(rows);
+  const { error: insertErr } = await supabaseAdmin
+    .from('knowledge_embeddings')
+    .upsert(rows, {
+      onConflict: 'org_id,source_type,source_id,chunk_index',
+      ignoreDuplicates: false,
+    });
   if (insertErr) {
     log.error(
       { err: insertErr.message, code: (insertErr as { code?: string }).code },
-      'knowledge_embeddings insert failed',
+      'knowledge_embeddings upsert failed',
     );
     return {
       ok: false,

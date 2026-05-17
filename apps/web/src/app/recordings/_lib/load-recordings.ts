@@ -108,41 +108,64 @@ function normalizeSentiment(raw: unknown): number[] {
   return out;
 }
 
-function normalizeHighlights(raw: unknown): RecordingHighlight[] {
-  if (!Array.isArray(raw)) return [];
-  const out: RecordingHighlight[] = [];
-  for (const h of raw) {
-    if (!h || typeof h !== 'object') continue;
-    const r = h as Record<string, unknown>;
-    const at =
-      typeof r.atSec === 'number' ? r.atSec : typeof r.at_sec === 'number' ? r.at_sec : null;
-    const label = typeof r.label === 'string' ? r.label : null;
-    if (at === null || label === null) continue;
-    out.push({
-      atSec: at,
-      label,
-      kind: typeof r.kind === 'string' ? r.kind : undefined,
-    });
-  }
-  return out;
-}
+// Round2 fix: 旧 normalizeHighlights / normalizeSpeakers は削除。
+// どちらも `recordings.key_points` jsonb を入力として
+// `[{atSec, label}]` / `[{name, pct}]` を期待していたが、Claude PROMPT-01 /
+// Mock summarize provider はどちらも `keyPoints: string[]` を書く schema。
+// schema mismatch で常に空配列になり、sparkline の右側 speaker chip と
+// 「主要ハイライト」リストが常時非表示になっていた (Round2 P0 bug)。
+//
+// 真の話者比率ソースは `transcript_segments` (TranscribeProvider が書く) なので
+// 下記 `speakerSplitFromSegments` で start/end から発話秒を集計する。
+// highlights 用の独立した jsonb 列はまだ未実装のため、当面は空配列固定とする。
 
 /**
- * 既存 fixture 形式 (DemoRecording.speakerSplit) は { name, pct }。
- * 本番では transcript_segments の集計結果が想定だが、まだ未確定なので
- * jsonb に { name, pct } 形式で入っていれば取り込む。
+ * recordings.transcript_segments (jsonb) は TranscribeProvider の出力で、
+ * `[{ startSec, endSec, speakerLabel, text, ... }]` の形。
+ * 話者別の発話時間比率 (pct) を整数% で算出する。
+ *
+ * 仕様:
+ *   - speakerLabel が null/空文字なら 'unknown' に寄せる
+ *   - 合計秒が 0 なら空配列 (sparkline 横の chip を出さない)
+ *   - 比率が大きい話者から並べる (UI で先頭表示)
  */
-function normalizeSpeakers(raw: unknown): SpeakerSplit[] {
+function speakerSplitFromSegments(raw: unknown): SpeakerSplit[] {
   if (!Array.isArray(raw)) return [];
-  const out: SpeakerSplit[] = [];
+  const totals = new Map<string, number>(); // speakerLabel → 累積秒
+  let grand = 0;
   for (const s of raw) {
     if (!s || typeof s !== 'object') continue;
-    const r = s as Record<string, unknown>;
-    const name = typeof r.name === 'string' ? r.name : null;
-    const pct = typeof r.pct === 'number' ? r.pct : null;
-    if (name === null || pct === null) continue;
-    out.push({ name, pct });
+    const o = s as Record<string, unknown>;
+    const start =
+      typeof o.startSec === 'number'
+        ? o.startSec
+        : typeof o.start_seconds === 'number'
+          ? o.start_seconds
+          : null;
+    const end =
+      typeof o.endSec === 'number'
+        ? o.endSec
+        : typeof o.end_seconds === 'number'
+          ? o.end_seconds
+          : null;
+    const label =
+      typeof o.speakerLabel === 'string'
+        ? o.speakerLabel
+        : typeof o.speaker_label === 'string'
+          ? o.speaker_label
+          : null;
+    if (start === null || end === null || end <= start) continue;
+    const dur = end - start;
+    const key = (label && label.length > 0 ? label : 'unknown').toString();
+    totals.set(key, (totals.get(key) ?? 0) + dur);
+    grand += dur;
   }
+  if (grand <= 0 || totals.size === 0) return [];
+  const out: SpeakerSplit[] = Array.from(totals.entries()).map(([name, sec]) => ({
+    name,
+    pct: Math.max(0, Math.min(100, Math.round((sec / grand) * 100))),
+  }));
+  out.sort((a, b) => b.pct - a.pct);
   return out;
 }
 
@@ -222,15 +245,21 @@ type RawRecordingRow = {
   sensitivity: string | null;
   summary: string | null;
   sentiment_timeline: unknown;
-  key_points: unknown;
+  /** transcript の jsonb (TranscriptSegment[]) — 話者比率の集計元 */
+  transcript_segments: unknown;
   created_at: string;
   processed_at: string | null;
   meetings?: {
     id: string;
     title: string;
     scheduled_at: string | null;
-    contacts?: { company_name: string | null } | null;
     owner_user_id: string | null;
+    /**
+     * Round2 fix: 旧来は `contacts.company_name` を引いていたが、
+     * contacts 表に company_name 列は無く `company_id → companies.name` が真のソース。
+     * /meetings/page.tsx (Round1 CTO HIGH-C-02) と同じパターンに合わせる。
+     */
+    contacts?: { company_id: string | null; companies?: { name: string | null } | null } | null;
     users?: { id: string; name: string | null } | null;
   } | null;
 };
@@ -275,8 +304,15 @@ export async function loadRecordings(
     return buildFallback(`supabase_init_failed: ${(err as Error).message}`);
   }
 
-  // 3) recordings + meetings + contacts + users を join。RLS は Supabase が自動適用。
-  //    embed エラー (FK 未定義 / table 欠落) は catch 側で fallback。
+  // 3) recordings + meetings + contacts + companies + users を join。
+  //    RLS は Supabase が自動適用。embed エラー (FK 未定義 / table 欠落) は
+  //    catch 側で fallback。
+  //
+  //    JOIN チェーン:
+  //      recordings.meeting_id → meetings.id
+  //      meetings.contact_id   → contacts.id
+  //      contacts.company_id   → companies.id (実会社名はここから)
+  //      meetings.owner_user_id → users.id
   let listQuery = supabase
     .from('recordings')
     .select(
@@ -289,7 +325,7 @@ export async function loadRecordings(
         sensitivity,
         summary,
         sentiment_timeline,
-        key_points,
+        transcript_segments,
         created_at,
         processed_at,
         meetings:meeting_id (
@@ -297,7 +333,10 @@ export async function loadRecordings(
           title,
           scheduled_at,
           owner_user_id,
-          contacts:contact_id ( company_name ),
+          contacts:contact_id (
+            company_id,
+            companies:company_id ( name )
+          ),
           users:owner_user_id ( id, name )
         )
       `,
@@ -345,6 +384,7 @@ export async function loadRecordings(
     const owner = meeting?.users ?? null;
     const recordedAt = meeting?.scheduled_at ?? r.created_at;
     const status = (r.processing_status as RecordingProcessingStatus) ?? 'pending';
+    const companyName = meeting?.contacts?.companies?.name ?? null;
     return {
       id: r.id,
       meetingId: r.meeting_id,
@@ -356,14 +396,19 @@ export async function loadRecordings(
       progressPct: statusToProgress(status),
       sensitivity: (r.sensitivity as RecordingSensitivity) ?? 'internal',
       aiSummary: r.summary,
+      // sparkline 元データは sentiment_timeline (worker 側 SummarizeProvider が書く)。
       sentimentCurve: normalizeSentiment(r.sentiment_timeline),
-      speakerSplit: normalizeSpeakers(r.key_points),
-      highlights: normalizeHighlights(r.key_points),
+      // speakerSplit は transcript_segments を集計した結果。
+      // (Round1 で `key_points` から読んでいたのは schema mismatch で常に空配列だった)
+      speakerSplit: speakerSplitFromSegments(r.transcript_segments),
+      // highlights の本ソース (recordings.highlights jsonb など) は未実装。
+      // 一覧 card の主要ハイライト欄は当面非表示でよい。
+      highlights: [],
       meeting: meeting
         ? {
             id: meeting.id,
             title: meeting.title,
-            companyName: meeting.contacts?.company_name ?? null,
+            companyName,
             ownerUserId: meeting.owner_user_id,
             ownerFullName: owner?.name ?? null,
             ownerInitials: initialsOf(owner?.name ?? null),

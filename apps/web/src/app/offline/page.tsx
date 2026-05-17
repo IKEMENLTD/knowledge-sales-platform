@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Inbox, RotateCcw, ScanLine, Search } from 'lucide-react';
 import Link from 'next/link';
+import { OfflineStoreProbe } from './_components/offline-store-probe';
 
 export const metadata = { title: 'オフライン' };
 
@@ -140,6 +141,11 @@ export default function OfflinePage() {
           ))}
         </ul>
       </section>
+
+      {/* cross-cutting P0-1 fix: OfflineStore 動作確認用プローブ。
+          実機 DevTools の IndexedDB で `ksp-offline` DB に `kv` store + entry が
+          作成されていることを確認できる。本番ユーザには控えめな表示。 */}
+      <OfflineStoreProbe />
 
       {/* UX Round2 LOW-D-09 fix: 落款 (inkan accent) — offline にも detail signature 流派 */}
       <div className="flex justify-end pt-2">

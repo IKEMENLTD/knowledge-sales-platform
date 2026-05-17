@@ -1,13 +1,17 @@
 'use client';
 
 /**
- * 商談一覧のフィルタバー — URL クエリ同期 (担当者 / ステージ / 期間 / 自由検索)。
+ * 商談一覧のフィルタバー — URL クエリ同期 (担当者 / 状態 / 期間 / 自由検索)。
  *
  * SearchParams を Source of Truth として保持。フォームの onSubmit と select の onChange で
  * router.push し、Server Component 側の re-render に委ねる。
  *
+ * P0-M-03 fix: 旧 `stage` クエリ (kanban 5 段ステージ scheduled/in_progress/won/lost/on_hold) は
+ * API の `meetingStageSchema` (DB enum first/.../closing) と enum が衝突して 422 を返していた。
+ * 案件の進行状態は `dealStatus` (open/won/lost/on_hold) で表現できるので、kanban ステージ
+ * 用の `stage` セレクトは廃止し、`dealStatus` セレクト 1 本に集約する。
+ *
  * クエリキー (URL 上は機械可読のため英語 key 維持。UI ラベルは編集的日本語のみ):
- *   stage      : DemoMeetingStage | ''        — 商談ステージ
  *   dealStatus : open | won | lost | on_hold  — 案件の状態
  *   ownerUserId: uuid | ''                    — 担当者
  *   q          : 自由検索 (タイトル / 会社名 / 次の一手 部分一致)
@@ -15,7 +19,6 @@
  */
 
 import { Input } from '@/components/ui/input';
-import { STAGE_LABELS } from '@/lib/demo/fixtures';
 import { cn } from '@/lib/utils';
 import { Filter, Search, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -26,15 +29,6 @@ export type FilterOwner = { id: string; fullName: string };
 export type MeetingFilterBarProps = {
   owners: FilterOwner[];
 };
-
-const STAGE_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: '全ステージ' },
-  { value: 'scheduled', label: STAGE_LABELS.scheduled },
-  { value: 'in_progress', label: STAGE_LABELS.in_progress },
-  { value: 'won', label: STAGE_LABELS.won },
-  { value: 'lost', label: STAGE_LABELS.lost },
-  { value: 'on_hold', label: STAGE_LABELS.on_hold },
-];
 
 const DEAL_STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: '全ての状態' },
@@ -49,7 +43,6 @@ export function MeetingFilterBar({ owners }: MeetingFilterBarProps) {
   const sp = useSearchParams();
 
   const [q, setQ] = useState(sp.get('q') ?? '');
-  const [stage, setStage] = useState(sp.get('stage') ?? '');
   const [dealStatus, setDealStatus] = useState(sp.get('dealStatus') ?? '');
   const [ownerUserId, setOwnerUserId] = useState(sp.get('ownerUserId') ?? '');
   const [from, setFrom] = useState(sp.get('from') ?? '');
@@ -58,7 +51,6 @@ export function MeetingFilterBar({ owners }: MeetingFilterBarProps) {
   // 親の URL が外部 (戻る/履歴) で変わったら同期しなおす
   useEffect(() => {
     setQ(sp.get('q') ?? '');
-    setStage(sp.get('stage') ?? '');
     setDealStatus(sp.get('dealStatus') ?? '');
     setOwnerUserId(sp.get('ownerUserId') ?? '');
     setFrom(sp.get('from') ?? '');
@@ -66,15 +58,14 @@ export function MeetingFilterBar({ owners }: MeetingFilterBarProps) {
   }, [sp]);
 
   const hasAnyFilter = useMemo(
-    () => Boolean(q || stage || dealStatus || ownerUserId || from || to),
-    [q, stage, dealStatus, ownerUserId, from, to],
+    () => Boolean(q || dealStatus || ownerUserId || from || to),
+    [q, dealStatus, ownerUserId, from, to],
   );
 
   const push = (next: Record<string, string>) => {
     const params = new URLSearchParams();
     const merged: Record<string, string> = {
       q,
-      stage,
       dealStatus,
       ownerUserId,
       from,
@@ -90,7 +81,6 @@ export function MeetingFilterBar({ owners }: MeetingFilterBarProps) {
 
   const reset = () => {
     setQ('');
-    setStage('');
     setDealStatus('');
     setOwnerUserId('');
     setFrom('');
@@ -127,25 +117,6 @@ export function MeetingFilterBar({ owners }: MeetingFilterBarProps) {
       </div>
 
       <select
-        value={stage}
-        onChange={(e) => {
-          setStage(e.target.value);
-          push({ stage: e.target.value });
-        }}
-        aria-label="商談ステージで絞り込み"
-        className={cn(
-          'md:col-span-2 h-11 rounded-md border border-border bg-surface-inset/60 px-3 text-sm',
-          'hover:border-foreground/25 focus-visible:outline-none focus-visible:border-ring',
-        )}
-      >
-        {STAGE_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-
-      <select
         value={dealStatus}
         onChange={(e) => {
           setDealStatus(e.target.value);
@@ -153,7 +124,7 @@ export function MeetingFilterBar({ owners }: MeetingFilterBarProps) {
         }}
         aria-label="案件の状態で絞り込み"
         className={cn(
-          'md:col-span-2 h-11 rounded-md border border-border bg-surface-inset/60 px-3 text-sm',
+          'md:col-span-4 h-11 rounded-md border border-border bg-surface-inset/60 px-3 text-sm',
           'hover:border-foreground/25 focus-visible:outline-none focus-visible:border-ring',
         )}
       >
