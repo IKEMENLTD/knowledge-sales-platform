@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
 import { ProtectedShell } from '@/components/layout/protected-shell';
+import type { ReactNode } from 'react';
 
 /**
  * /inbox/** は名寄せ衝突・通知などの未処理タスク受信箱。

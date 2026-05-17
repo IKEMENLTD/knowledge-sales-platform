@@ -1,6 +1,6 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { rateLimitWeb } from '@/lib/rate-limit';
 import { updateSession } from '@/lib/supabase/middleware';
+import { type NextRequest, NextResponse } from 'next/server';
 
 /**
  * Phase1 の認証ガード + /api/* レート制限。

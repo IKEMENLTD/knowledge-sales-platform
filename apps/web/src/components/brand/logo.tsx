@@ -54,14 +54,7 @@ export function LogoMark({
       </g>
       {/* Inkan (落款) — 朱の小四角 */}
       {!noInkan ? (
-        <rect
-          x="22.5"
-          y="22.5"
-          width="6"
-          height="6"
-          rx="0.5"
-          fill="hsl(var(--cinnabar))"
-        />
+        <rect x="22.5" y="22.5" width="6" height="6" rx="0.5" fill="hsl(var(--cinnabar))" />
       ) : null}
     </svg>
   );
@@ -82,7 +75,9 @@ export function Logo({ className, variant = 'compact', tone = 'currentColor' }: 
         <span>ksp</span>
         {variant === 'full' ? (
           <>
-            <span aria-hidden className="text-muted-foreground/60 font-normal">/</span>
+            <span aria-hidden className="text-muted-foreground/60 font-normal">
+              /
+            </span>
             <span className="kicker">Knowledge × Sales</span>
           </>
         ) : null}

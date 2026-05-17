@@ -1,10 +1,10 @@
-import { z } from 'zod';
 import {
   PRIVACY_HASH,
   PRIVACY_VERSION,
   TERMS_HASH,
   TERMS_VERSION,
 } from '@/lib/onboarding/policy-document';
+import { z } from 'zod';
 
 /**
  * Pure 関数層 (DI 可能、Supabase / Next.js から完全独立)。

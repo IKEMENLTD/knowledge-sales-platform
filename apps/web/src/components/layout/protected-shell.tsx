@@ -1,5 +1,5 @@
+import { type UserRole, requireUser } from '@/lib/auth/server';
 import type { ReactNode } from 'react';
-import { requireUser, type UserRole } from '@/lib/auth/server';
 import { AppShell } from './app-shell';
 
 /**

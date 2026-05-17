@@ -1,10 +1,8 @@
 'use server';
 
-import { headers } from 'next/headers';
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { env } from '@/lib/env';
 import {
+  type AuthContext,
   buildConsentRows,
   evaluateCompletion,
   isUniqueViolation,
@@ -12,10 +10,12 @@ import {
   parseConsentForm,
   parseWithdrawForm,
   safeIp,
-  type AuthContext,
 } from '@/lib/onboarding/core';
 import { captureException } from '@/lib/sentry';
 import { createServerClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 async function requireAuthContext(): Promise<AuthContext> {
   const supabase = await createServerClient();
@@ -204,8 +204,7 @@ export async function completeOnboarding() {
     terms_consented_at: (data as { terms_consented_at: string | null }).terms_consented_at,
     privacy_acknowledged_at: (data as { privacy_acknowledged_at: string | null })
       .privacy_acknowledged_at,
-    calendar_connected_at: (data as { calendar_connected_at: string | null })
-      .calendar_connected_at,
+    calendar_connected_at: (data as { calendar_connected_at: string | null }).calendar_connected_at,
     calendar_skipped_at: (data as { calendar_skipped_at: string | null }).calendar_skipped_at,
   });
   if (!ev.ok) redirect(`/onboarding?error=${ev.code}`);

@@ -1,8 +1,8 @@
 'use client';
 
-import { ArrowRight, Check, Minus } from 'lucide-react';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { completeOnboarding } from '@/lib/auth/onboarding';
+import { ArrowRight, Check, Minus } from 'lucide-react';
 
 type Props = {
   termsAccepted: boolean;
@@ -100,9 +100,7 @@ export function StepDone({
                   {item.optional ? <span className="ml-2 kicker">任意</span> : null}
                 </span>
               </span>
-              <span className="kicker">
-                {isDone ? '完了' : isSkipped ? 'スキップ' : '未完了'}
-              </span>
+              <span className="kicker">{isDone ? '完了' : isSkipped ? 'スキップ' : '未完了'}</span>
             </li>
           );
         })}

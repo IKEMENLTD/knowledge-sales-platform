@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export const metadata = { title: '権限がありません' };
 
@@ -11,26 +11,21 @@ const REASON_TEXT: Record<string, string> = {
 
 function ShieldOffIllustration() {
   return (
-    <svg
-      aria-hidden
-      viewBox="0 0 240 200"
-      className="w-full max-w-[300px] h-auto"
-      role="img"
-    >
+    <svg aria-hidden viewBox="0 0 240 200" className="w-full max-w-[300px] h-auto" role="img">
       <defs>
         <pattern id="grid403" width="20" height="20" patternUnits="userSpaceOnUse">
-          <path
-            d="M 20 0 L 0 0 0 20"
-            fill="none"
-            stroke="hsl(var(--border))"
-            strokeWidth="0.5"
-          />
+          <path d="M 20 0 L 0 0 0 20" fill="none" stroke="hsl(var(--border))" strokeWidth="0.5" />
         </pattern>
       </defs>
       <rect width="240" height="200" fill="url(#grid403)" opacity="0.6" />
       {/* 鍵 + 横切る線 */}
       <g transform="translate(120 100)">
-        <circle r="56" fill="hsl(var(--surface-raised))" stroke="hsl(var(--border))" strokeWidth="1.5" />
+        <circle
+          r="56"
+          fill="hsl(var(--surface-raised))"
+          stroke="hsl(var(--border))"
+          strokeWidth="1.5"
+        />
         <path
           d="M -22 -12 a 22 22 0 1 1 44 0 v 26 h -44 z"
           fill="none"
@@ -39,7 +34,16 @@ function ShieldOffIllustration() {
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <rect x="-26" y="0" width="52" height="32" rx="3" fill="hsl(var(--surface-raised))" stroke="hsl(var(--foreground))" strokeWidth="3" />
+        <rect
+          x="-26"
+          y="0"
+          width="52"
+          height="32"
+          rx="3"
+          fill="hsl(var(--surface-raised))"
+          stroke="hsl(var(--foreground))"
+          strokeWidth="3"
+        />
         <circle r="3.5" fill="hsl(var(--foreground))" cy="14" />
         {/* 朱の cross-out line */}
         <line

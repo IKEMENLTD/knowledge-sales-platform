@@ -62,6 +62,17 @@ const nextConfig = {
     },
   },
   transpilePackages: ['@ksp/db', '@ksp/shared'],
+  // Round4 Phase 4 fix: packages/shared が NodeNext で `.js` extension import を使う
+  // (TS の ESM 規約)。Next.js webpack で `.js` を `.ts` に alias する必要がある。
+  webpack: (config) => {
+    config.resolve = config.resolve ?? {};
+    config.resolve.extensionAlias = {
+      ...(config.resolve.extensionAlias ?? {}),
+      '.js': ['.ts', '.tsx', '.js'],
+      '.mjs': ['.mts', '.mjs'],
+    };
+    return config;
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '**.supabase.co' },

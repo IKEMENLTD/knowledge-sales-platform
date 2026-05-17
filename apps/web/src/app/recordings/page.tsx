@@ -1,28 +1,82 @@
-import { Clock, Mic, Play, Sparkles } from 'lucide-react';
-import Link from 'next/link';
-import { Card } from '@/components/ui/card';
-import {
-  DEMO_RECORDINGS,
-  type DemoRecording,
-  findMeeting,
-  findMember,
-  formatDateJp,
-  formatDuration,
-  formatTimestamp,
-} from '@/lib/demo/fixtures';
+import { requireUser } from '@/lib/auth/server';
 import { cn } from '@/lib/utils';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { RecordingCard } from './_components/recording-card';
+import { RecordingFilterBar } from './_components/recording-filter-bar';
+import { RecordingFailedCard, RecordingProcessingCard } from './_components/recording-skeleton';
+import { type RecordingListItem, loadRecordings } from './_lib/load-recordings';
 
 export const metadata = { title: '録画' };
+export const dynamic = 'force-dynamic';
 
-export default function RecordingsPage() {
-  const totalSec = DEMO_RECORDINGS.reduce((sum, r) => sum + r.durationSec, 0);
-  const totalHours = Math.round((totalSec / 3600) * 10) / 10;
+type SearchParams = {
+  ownerUserId?: string;
+  status?: string;
+  from?: string;
+  to?: string;
+  limit?: string;
+  offset?: string;
+};
+
+const PAGE_SIZE = 20;
+
+function isoDatePart(iso?: string): string | undefined {
+  if (!iso) return undefined;
+  const idx = iso.indexOf('T');
+  return idx > 0 ? iso.slice(0, idx) : iso;
+}
+
+function formatHours(totalSec: number): string {
+  if (totalSec <= 0) return '0';
+  const hours = totalSec / 3600;
+  // 10時間以上は整数、未満は小数1桁。
+  return hours >= 10 ? Math.round(hours).toString() : (Math.round(hours * 10) / 10).toString();
+}
+
+export default async function RecordingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  // role gate — RLS は Supabase 側で再確認するが、UI gate も明示。
+  await requireUser();
+  const sp = (await searchParams) ?? {};
+
+  const result = await loadRecordings({
+    ownerUserId: sp.ownerUserId,
+    status: sp.status,
+    from: sp.from,
+    to: sp.to,
+    limit: sp.limit ?? String(PAGE_SIZE),
+    offset: sp.offset,
+  });
+
+  const offset = Number(sp.offset ?? 0) || 0;
+  const limit = Number(sp.limit ?? PAGE_SIZE) || PAGE_SIZE;
+  const totalHours = formatHours(result.totalDurationSec);
+
+  // 表示順: 失敗 → 処理中 → 完了 (ユーザーが拾うべき順)
+  const failed = result.items.filter((r) => r.processingStatus === 'failed');
+  const processing = result.items.filter(
+    (r) => r.processingStatus !== 'completed' && r.processingStatus !== 'failed',
+  );
+  const completed = result.items.filter((r) => r.processingStatus === 'completed');
+
+  const visible: { kind: 'failed' | 'processing' | 'completed'; rec: RecordingListItem }[] = [
+    ...failed.map((rec) => ({ kind: 'failed' as const, rec })),
+    ...processing.map((rec) => ({ kind: 'processing' as const, rec })),
+    ...completed.map((rec) => ({ kind: 'completed' as const, rec })),
+  ];
+
+  const hasFilter = Boolean(sp.ownerUserId || sp.status || sp.from || sp.to);
+
   return (
     <div className="space-y-10 max-w-6xl mx-auto">
       <div className="flex items-baseline justify-between border-t-2 border-foreground pt-3 animate-fade-in">
         <p className="kicker">№ 01 — 録画</p>
         <span className="kicker tabular">
-          {DEMO_RECORDINGS.length} 件 ・ 累計 {totalHours} 時間
+          {result.totalCount} 件 ・ 累計 {totalHours} 時間
         </span>
       </div>
 
@@ -31,190 +85,198 @@ export default function RecordingsPage() {
           商談の録画を、ナレッジに変える。
         </h1>
         <p className="text-base leading-relaxed text-muted-foreground max-w-prose">
-          Zoom の録画を自動取り込み。文字起こし・要約・話者ごとの感情の流れ・台詞検索まで、1 件あたり数分で揃います。
+          Zoom の録画を自動取り込み。文字起こし・要約・話者ごとの感情の流れ・台詞検索まで、1
+          件あたり数分で揃います。
         </p>
+        {result.isFallback ? (
+          <p className="text-xs text-muted-foreground inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/40 px-2.5 py-1">
+            <span className="size-1.5 rounded-full bg-cinnabar" aria-hidden />
+            まだ録画がありません — サンプルを表示しています
+          </p>
+        ) : null}
       </header>
+
+      {/* KPI ストリップ */}
+      <section
+        aria-label="録画の状態サマリ"
+        aria-live="polite"
+        className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-up [animation-delay:40ms]"
+      >
+        <KpiStat kicker="累計の長さ" metric={`${totalHours} 時間`} hint="完了済 + 処理中の合計" />
+        <KpiStat
+          kicker="処理中"
+          metric={`${result.processingCount} 件`}
+          hint={result.processingCount > 0 ? '完了まで通常 5〜10 分' : '進行中の処理はありません'}
+          Icon={result.processingCount > 0 ? Loader2 : undefined}
+          accent={result.processingCount > 0 ? 'pulse' : undefined}
+        />
+        <KpiStat
+          kicker="失敗"
+          metric={`${result.failedCount} 件`}
+          hint={result.failedCount > 0 ? '再実行ボタンで再キックできます' : '失敗はありません'}
+          Icon={result.failedCount > 0 ? AlertCircle : undefined}
+          accent={result.failedCount > 0 ? 'danger' : undefined}
+        />
+      </section>
 
       <div className="hairline" aria-hidden />
 
-      <section
-        aria-label="録画一覧"
-        className="space-y-5 animate-fade-up [animation-delay:80ms]"
-      >
-        {DEMO_RECORDINGS.map((r, idx) => (
-          <RecordingCard key={r.id} recording={r} index={idx} />
-        ))}
+      {/* Filter */}
+      <section className="animate-fade-up [animation-delay:60ms]">
+        <RecordingFilterBar
+          owners={result.owners}
+          defaultOwnerUserId={sp.ownerUserId}
+          defaultStatus={sp.status}
+          defaultFrom={isoDatePart(sp.from)}
+          defaultTo={isoDatePart(sp.to)}
+        />
       </section>
+
+      <section aria-label="録画一覧" className="space-y-5 animate-fade-up [animation-delay:80ms]">
+        {visible.length === 0 ? (
+          <EmptyState hasFilter={hasFilter} />
+        ) : (
+          visible.map((v, idx) => {
+            if (v.kind === 'failed') {
+              return <RecordingFailedCard key={v.rec.id} recording={v.rec} index={idx} />;
+            }
+            if (v.kind === 'processing') {
+              return <RecordingProcessingCard key={v.rec.id} recording={v.rec} index={idx} />;
+            }
+            return <RecordingCard key={v.rec.id} recording={v.rec} index={idx} />;
+          })
+        )}
+      </section>
+
+      {/* Pager — fixture (3件) では描画しない。totalCount が limit を超えるときだけ。 */}
+      {result.totalCount > limit ? (
+        <Pager offset={offset} limit={limit} total={result.totalCount} searchParams={sp} />
+      ) : null}
     </div>
   );
 }
 
-function RecordingCard({ recording, index }: { recording: DemoRecording; index: number }) {
-  const meeting = findMeeting(recording.meetingId);
-  const owner = meeting ? findMember(meeting.ownerId) : undefined;
-
+function KpiStat({
+  kicker,
+  metric,
+  hint,
+  Icon,
+  accent,
+}: {
+  kicker: string;
+  metric: string;
+  hint: string;
+  Icon?: typeof Loader2;
+  accent?: 'pulse' | 'danger';
+}) {
   return (
-    <Link
-      href={`/recordings/${recording.id}` as never}
-      className="block group focus-visible:outline-none"
-    >
-      <Card
-        interactive
-        className="relative overflow-hidden p-0 focus-visible:shadow-focus-ring"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-[260px_1fr]">
-          <div className="relative bg-gradient-to-br from-foreground/85 to-foreground/65 dark:from-foreground/20 dark:to-foreground/10 p-5 md:p-6 text-background min-h-[160px] flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="tabular text-[10px] uppercase tracking-[0.16em] text-background/65">
-                {(index + 1).toString().padStart(2, '0')}
-              </span>
-              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.16em] text-background/75">
-                <Mic aria-hidden strokeWidth={1.8} className="size-3" />
-                録画
-              </span>
-            </div>
-
-            <div className="space-y-1">
-              <p className="text-[10px] uppercase tracking-[0.16em] text-background/65">
-                感情の流れ
-              </p>
-              <Sparkline values={recording.sentimentCurve} />
-            </div>
-
-            <div className="flex items-center justify-between gap-3">
-              <span
-                aria-hidden
-                className="inline-flex items-center justify-center size-10 rounded-full bg-cinnabar shadow-cinnabar-glow text-cinnabar-foreground"
-              >
-                <Play strokeWidth={1.8} className="size-5 ml-0.5" />
-              </span>
-              <div className="text-right">
-                <p className="display tabular text-base font-semibold text-background">
-                  {formatDuration(recording.durationSec)}
-                </p>
-                <p className="text-[10px] uppercase tracking-[0.16em] text-background/70">
-                  {formatDateJp(recording.recordedAt, true)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-5 md:p-6 space-y-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <h2 className="display text-lg md:text-xl font-semibold tracking-crisp leading-tight">
-                  {recording.title}
-                </h2>
-                {meeting ? (
-                  <p className="text-xs text-muted-foreground">
-                    {meeting.companyName} ・ 担当 {owner?.fullName ?? '—'}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="border-l-2 border-cinnabar/40 pl-3 space-y-1">
-              <p className="kicker">AI 要約</p>
-              <p className="text-sm leading-relaxed text-foreground/85 line-clamp-2">
-                {recording.aiSummary}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {recording.speakerSplit.map((s) => (
-                <SpeakerChip key={s.name} name={s.name} pct={s.pct} />
-              ))}
-            </div>
-
-            <div className="space-y-2">
-              <p className="kicker">主要ハイライト</p>
-              <ul className="space-y-1.5">
-                {recording.highlights.slice(0, 3).map((h) => (
-                  <li key={h.atSec} className="flex items-baseline gap-2 text-xs">
-                    <span className="tabular text-[10px] w-12 shrink-0 text-muted-foreground">
-                      {formatTimestamp(h.atSec)}
-                    </span>
-                    <span className="text-foreground/85 leading-relaxed line-clamp-1">
-                      {h.label}
-                    </span>
-                  </li>
-                ))}
-                {recording.highlights.length > 3 ? (
-                  <li className="text-[10px] tracking-wide text-muted-foreground pl-14">
-                    ほか {recording.highlights.length - 3} 件のハイライト
-                  </li>
-                ) : null}
-              </ul>
-            </div>
-
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground pt-1">
-              <Clock aria-hidden strokeWidth={1.6} className="size-3.5" />
-              <span>文字起こし済</span>
-              <span aria-hidden>・</span>
-              <span className="inline-flex items-center gap-1">
-                <Sparkles aria-hidden strokeWidth={1.6} className="size-3 text-cinnabar/70" />
-                台詞まで検索できます
-              </span>
-            </div>
-          </div>
-        </div>
-      </Card>
-    </Link>
-  );
-}
-
-function SpeakerChip({ name, pct }: { name: string; pct: number }) {
-  return (
-    <span
+    <div
       className={cn(
-        'inline-flex items-center gap-2 rounded-full border border-border/70',
-        'bg-card/60 px-2.5 h-6 text-[11px]',
+        'rounded-xl border border-border/60 bg-card/70 p-4 space-y-2',
+        'shadow-[inset_0_1px_0_hsl(var(--surface-highlight)/0.4)]',
       )}
-      title={`${name} の発話比率 ${pct}%`}
     >
-      <span className="font-medium tracking-crisp">{name}</span>
-      <span className="tabular text-muted-foreground">{pct}%</span>
-    </span>
+      <div className="flex items-baseline justify-between">
+        <p className="kicker">{kicker}</p>
+        {Icon ? (
+          <Icon
+            aria-hidden
+            strokeWidth={1.6}
+            className={cn(
+              'size-4',
+              accent === 'pulse' && 'text-cinnabar animate-spin',
+              accent === 'danger' && 'text-cinnabar',
+            )}
+          />
+        ) : null}
+      </div>
+      <p className="display tabular text-2xl font-semibold tracking-[-0.022em] leading-none">
+        {metric}
+      </p>
+      <p className="text-xs text-muted-foreground">{hint}</p>
+    </div>
   );
 }
 
-function Sparkline({ values }: { values: number[] }) {
-  if (values.length < 2) return null;
-  const width = 240;
-  const height = 56;
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-  // 全値が等しいときは中央水平線になるよう span=1 を維持
-  const span = Math.max(1, max - min);
-  const stepX = width / (values.length - 1);
-  const path = values
-    .map((v, i) => {
-      const x = i * stepX;
-      const y = height - ((v - min) / span) * (height - 8) - 4;
-      return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
-    })
-    .join(' ');
-  const last = values[values.length - 1] ?? 0;
-  const lastY = height - ((last - min) / span) * (height - 8) - 4;
+function EmptyState({ hasFilter }: { hasFilter: boolean }) {
   return (
-    <svg
-      role="img"
-      aria-label="感情の流れ (上に向かうほど前向きな会話)"
-      viewBox={`0 0 ${width} ${height}`}
-      className="w-full h-12"
-    >
-      <defs>
-        <linearGradient id="spark-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="hsl(var(--cinnabar))" stopOpacity="0.45" />
-          <stop offset="100%" stopColor="hsl(var(--cinnabar))" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path
-        d={`${path} L ${width} ${height} L 0 ${height} Z`}
-        fill="url(#spark-grad)"
-      />
-      <path d={path} stroke="hsl(var(--cinnabar))" strokeWidth="1.5" fill="none" />
-      <circle cx={width} cy={lastY} r="3" fill="hsl(var(--cinnabar))" />
-    </svg>
+    <div className="rounded-xl border border-dashed border-border/70 bg-card/40 p-10 text-center space-y-2">
+      <p className="display text-base font-semibold tracking-crisp">
+        {hasFilter ? '条件に合う録画はありません' : 'まだ録画がありません'}
+      </p>
+      <p className="text-sm text-muted-foreground">
+        {hasFilter
+          ? '担当者・期間・状態の条件を緩めるか、クリアしてみてください。'
+          : 'Zoom 連携が有効なら、商談終了から数分で自動的にここに並びます。'}
+      </p>
+      {hasFilter ? (
+        <Link
+          href="/recordings"
+          className="inline-flex items-center gap-1 text-sm text-cinnabar hover:underline mt-2"
+        >
+          絞り込みをクリア
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+function Pager({
+  offset,
+  limit,
+  total,
+  searchParams,
+}: {
+  offset: number;
+  limit: number;
+  total: number;
+  searchParams: SearchParams;
+}) {
+  const prevOffset = Math.max(0, offset - limit);
+  const nextOffset = offset + limit;
+  const buildHref = (newOffset: number) => {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(searchParams)) {
+      if (v && k !== 'offset') qs.set(k, v);
+    }
+    if (newOffset > 0) qs.set('offset', String(newOffset));
+    const s = qs.toString();
+    return s ? `/recordings?${s}` : '/recordings';
+  };
+  const hasPrev = offset > 0;
+  const hasNext = nextOffset < total;
+  const pageNo = Math.floor(offset / limit) + 1;
+  const lastPage = Math.max(1, Math.ceil(total / limit));
+
+  return (
+    <nav aria-label="ページ送り" className="flex items-center justify-between pt-2">
+      <Link
+        href={buildHref(prevOffset) as never}
+        aria-disabled={!hasPrev}
+        className={cn(
+          'inline-flex items-center gap-1 rounded-md border border-border/70 bg-card/60',
+          'px-3 h-9 text-xs text-foreground transition-colors',
+          'hover:border-foreground/30',
+          !hasPrev && 'opacity-40 pointer-events-none',
+        )}
+      >
+        前のページ
+      </Link>
+      <p className="kicker tabular">
+        {pageNo} / {lastPage}
+      </p>
+      <Link
+        href={buildHref(nextOffset) as never}
+        aria-disabled={!hasNext}
+        className={cn(
+          'inline-flex items-center gap-1 rounded-md border border-border/70 bg-card/60',
+          'px-3 h-9 text-xs text-foreground transition-colors',
+          'hover:border-foreground/30',
+          !hasNext && 'opacity-40 pointer-events-none',
+        )}
+      >
+        次のページ
+      </Link>
+    </nav>
   );
 }

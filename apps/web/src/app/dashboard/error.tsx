@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { captureException } from '@/lib/sentry';
+import { useEffect } from 'react';
 
 /**
  * 20_failure_recovery: ダッシュボード描画失敗時のフォールバック。

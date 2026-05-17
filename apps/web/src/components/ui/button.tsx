@@ -1,7 +1,7 @@
-import { Slot } from '@radix-ui/react-slot';
-import { cva, type VariantProps } from 'class-variance-authority';
-import { forwardRef, type ButtonHTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
+import { Slot } from '@radix-ui/react-slot';
+import { type VariantProps, cva } from 'class-variance-authority';
+import { type ButtonHTMLAttributes, forwardRef } from 'react';
 
 /**
  * "Sumi & Cinnabar" button system.
@@ -55,10 +55,7 @@ const buttonVariants = cva(
           'hover:bg-accent hover:-translate-y-px',
           'active:translate-y-0',
         ].join(' '),
-        ghost: [
-          'text-foreground',
-          'hover:bg-accent hover:text-accent-foreground',
-        ].join(' '),
+        ghost: ['text-foreground', 'hover:bg-accent hover:text-accent-foreground'].join(' '),
         link: [
           'text-foreground underline-offset-4',
           'hover:underline decoration-cinnabar decoration-[1.5px] underline-offset-[6px]',

@@ -1,19 +1,14 @@
+import { DEFAULT_ORG_ID } from '@ksp/shared';
 import { Hono } from 'hono';
 import type { Logger } from 'pino';
 import { z } from 'zod';
-import { computeUrlValidationToken, verifyZoomSignature } from '../lib/zoom-webhook.js';
-import { pgmqSend } from '../lib/pgmq.js';
-import { supabaseAdmin } from '../lib/supabase.js';
-import { captureException } from '../lib/sentry.js';
-import { logger } from '../lib/logger.js';
-import { rateLimitPerIp } from '../lib/rate-limit.js';
 import { appendAudit } from '../lib/audit.js';
-
-/**
- * Phase1 シングルテナント DEFAULT_ORG_ID。
- * worker から audit_logs / jobs_inflight に書く際の固定値。
- */
-const DEFAULT_ORG_ID = '00000000-0000-0000-0000-000000000001';
+import { logger } from '../lib/logger.js';
+import { pgmqSend } from '../lib/pgmq.js';
+import { rateLimitPerIp } from '../lib/rate-limit.js';
+import { captureException } from '../lib/sentry.js';
+import { supabaseAdmin } from '../lib/supabase.js';
+import { computeUrlValidationToken, verifyZoomSignature } from '../lib/zoom-webhook.js';
 
 /**
  * jobs_inflight TTL — Zoom recording.completed の処理が完了する想定上限。

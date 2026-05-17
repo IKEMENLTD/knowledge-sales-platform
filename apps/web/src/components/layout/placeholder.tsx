@@ -1,16 +1,16 @@
-import type { ReactNode } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { ReactNode } from 'react';
 
 /**
  * Editorial placeholder for未実装画面。
- *  - SC/T コードは data-* 属性のみ。UI 表示はしない (営業マンに見せる必要無し)
+ *  - 内部仕様コード (scCode/taskCode) は採番ロジック用にだけ受け取り、DOM には出さない
  *  - "もうすぐ使えます" コピーで brand voice 統一
  *  - kicker (№ + 部門) + display title + hairline で editorial feel
  *  - children で個別 CTA を追加可能
  */
 export function PagePlaceholder({
   scCode,
-  taskCode,
+  taskCode: _taskCode,
   title,
   kicker,
   description,
@@ -18,7 +18,9 @@ export function PagePlaceholder({
   comingSoonNote,
   children,
 }: {
+  /** 採番ロジックのためだけに受け取る (UI へは番号としてのみ反映、コード文字列は露出させない) */
   scCode: string;
+  /** 互換のため受け取るが UI には出さない (Phase 1 placeholder の呼び出し互換性のため残置) */
   taskCode?: string;
   title: string;
   /** "営業 / 名刺" のような editorial kicker */
@@ -31,11 +33,7 @@ export function PagePlaceholder({
 }) {
   const sectionNo = scCode.replace(/^SC-?/, '').padStart(2, '0');
   return (
-    <div
-      className="space-y-8 max-w-3xl mx-auto"
-      data-sc-code={scCode}
-      data-task-code={taskCode}
-    >
+    <div className="space-y-8 max-w-3xl mx-auto">
       <header className="space-y-3 animate-fade-up">
         <p className="kicker">
           № {sectionNo} — {kicker}
@@ -43,9 +41,7 @@ export function PagePlaceholder({
         <h1 className="display text-3xl md:text-4xl font-semibold tracking-crisp text-balance">
           {title}
         </h1>
-        <p className="text-base leading-relaxed text-muted-foreground max-w-prose">
-          {description}
-        </p>
+        <p className="text-base leading-relaxed text-muted-foreground max-w-prose">{description}</p>
       </header>
 
       <div className="hairline" aria-hidden />

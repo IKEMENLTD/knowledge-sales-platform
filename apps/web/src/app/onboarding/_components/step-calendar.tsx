@@ -1,9 +1,9 @@
 'use client';
 
-import { Calendar, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { connectCalendar, skipCalendar } from '@/lib/auth/onboarding';
+import { Calendar, CheckCircle2 } from 'lucide-react';
 
 type Props = {
   alreadyConnected: boolean;
@@ -13,11 +13,7 @@ type Props = {
 export function StepCalendar({ alreadyConnected, hasCalendarScope }: Props) {
   const Connected = (
     <div className="rounded-lg border border-chitose/40 bg-chitose-muted/30 p-5 flex items-start gap-4">
-      <CheckCircle2
-        aria-hidden
-        strokeWidth={1.6}
-        className="size-5 shrink-0 mt-0.5 text-chitose"
-      />
+      <CheckCircle2 aria-hidden strokeWidth={1.6} className="size-5 shrink-0 mt-0.5 text-chitose" />
       <div className="flex-1">
         <p className="display text-sm font-semibold tracking-crisp text-chitose">
           Google カレンダーと連携済みです。
@@ -37,7 +33,8 @@ export function StepCalendar({ alreadyConnected, hasCalendarScope }: Props) {
           今日の商談予定を、ホームに自動表示する。
         </h2>
         <p className="text-sm leading-relaxed text-muted-foreground max-w-prose">
-          Google カレンダーから商談の予定 (calendar.events) のみを読み取ります。Gmail や Drive へのアクセスは行いません。
+          Google カレンダーから商談の予定 (calendar.events) のみを読み取ります。Gmail や Drive
+          へのアクセスは行いません。
         </p>
       </header>
 

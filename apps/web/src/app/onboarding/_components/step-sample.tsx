@@ -1,9 +1,9 @@
 'use client';
 
-import { Database, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { loadSampleData, skipSampleData } from '@/lib/auth/onboarding';
+import { Database, Sparkles } from 'lucide-react';
 
 type Props = {
   alreadyLoaded: boolean;

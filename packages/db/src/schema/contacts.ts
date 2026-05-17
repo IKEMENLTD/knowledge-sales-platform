@@ -16,6 +16,19 @@ export const contactStatus = [
 ] as const;
 export type ContactStatus = (typeof contactStatus)[number];
 
+/**
+ * 名刺レビュー状態 — sales funnel の `status` とは独立。
+ * Phase2 で追加された列 (0034_contacts_phase2.sql)。
+ */
+export const reviewStatus = [
+  'pending_ocr',
+  'pending_review',
+  'duplicate_suspect',
+  'verified',
+  'merged',
+] as const;
+export type ReviewStatus = (typeof reviewStatus)[number];
+
 export const contacts = pgTable(
   'contacts',
   {
@@ -25,18 +38,32 @@ export const contacts = pgTable(
     ownerUserId: uuid('owner_user_id')
       .notNull()
       .references(() => users.id),
+    /** Phase2: 「誰が取り込んだか」owner_user_id (担当営業) とは別概念。 */
+    createdByUserId: uuid('created_by_user_id').references(() => users.id),
     name: text('name').notNull(),
     nameKana: text('name_kana'),
     title: text('title'),
     email: text('email'),
     phone: text('phone'),
+    /** Phase2: 重複検知のための正規化済キャッシュ。worker が書く。 */
+    normalizedEmail: text('normalized_email'),
+    normalizedPhone: text('normalized_phone'),
     businessCardImageUrl: text('business_card_image_url'),
+    /** Phase2: 同一画像の重複検知用 SHA-256 hex (org_id 内 unique partial)。 */
+    businessCardImageHash: text('business_card_image_hash'),
     ocrRawJson: jsonb('ocr_raw_json'),
     ocrConfidence: numeric('ocr_confidence', { precision: 3, scale: 2 }),
+    /** sales funnel ステータス (new → contacted → ...) */
     status: text('status', { enum: contactStatus }).notNull().default('new'),
+    /** Phase2: OCR/レビュー段階の状態 (sales status と独立)。 */
+    reviewStatus: text('review_status', { enum: reviewStatus }).default('pending_ocr'),
     source: text('source').default('business_card'),
     linkedinUrl: text('linkedin_url'),
     tags: text('tags').array(),
+    /** Phase2: 実撮影/取込時刻。created_at は DB row 生成時刻。 */
+    capturedAt: timestamp('captured_at', { withTimezone: true }),
+    /** Phase2: soft delete。 */
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().default(sql`now()`),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().default(sql`now()`),
   },

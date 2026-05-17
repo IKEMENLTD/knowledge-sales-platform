@@ -13,3 +13,4 @@ export * from './idempotency.js';
 export * from './feature-flags.js';
 export * from './p1-extended.js';
 export * from './share-links.js';
+export * from './search.js';

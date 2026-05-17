@@ -1,10 +1,10 @@
 'use client';
 
-import { Loader2 } from 'lucide-react';
-import { forwardRef, type ReactNode } from 'react';
-import { useFormStatus } from 'react-dom';
 import { Button, type ButtonProps } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
+import { type ReactNode, forwardRef } from 'react';
+import { useFormStatus } from 'react-dom';
 
 /**
  * Server Action 用 submit ボタン。useFormStatus() の pending で
@@ -36,10 +36,7 @@ export const SubmitButton = forwardRef<HTMLButtonElement, SubmitButtonProps>(
       >
         {pending ? (
           <>
-            <Loader2
-              aria-hidden
-              className="mr-2 h-4 w-4 animate-spin"
-            />
+            <Loader2 aria-hidden className="mr-2 h-4 w-4 animate-spin" />
             <span>{pendingLabel ?? '処理中…'}</span>
           </>
         ) : (

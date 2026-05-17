@@ -1,8 +1,13 @@
+import { ThemeProvider } from '@/components/layout/theme-provider';
 import type { Metadata, Viewport } from 'next';
-import { Bricolage_Grotesque, JetBrains_Mono, Noto_Sans_JP, Plus_Jakarta_Sans } from 'next/font/google';
+import {
+  Bricolage_Grotesque,
+  JetBrains_Mono,
+  Noto_Sans_JP,
+  Plus_Jakarta_Sans,
+} from 'next/font/google';
 import type { ReactNode } from 'react';
 import { Toaster } from 'sonner';
-import { ThemeProvider } from '@/components/layout/theme-provider';
 import './globals.css';
 
 /* ----------------------------------------------------------------------------

@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
 import { captureMessage } from '@/lib/sentry';
+import { NextResponse } from 'next/server';
 
 /**
  * CSP 違反レポート受信エンドポイント。

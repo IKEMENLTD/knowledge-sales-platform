@@ -298,9 +298,7 @@ export const DEMO_MEETINGS: DemoMeeting[] = [
     aiSummary:
       'POC の結果は良好だったが、本年度の IT 予算が想定より早く枯渇。再検討は 2026 年下期。「機能ではなく、組み込み工数の懸念が大きかった」と小林課長が率直に共有。',
     nextAction: '10 月再開の際に再アプローチ。ナーチャー継続',
-    commitments: [
-      { atSec: 1135, text: '組み込み事例集を 1 ページにまとめて送付' },
-    ],
+    commitments: [{ atSec: 1135, text: '組み込み事例集を 1 ページにまとめて送付' }],
     recordingId: 'demo-r-002',
   },
   {
@@ -350,9 +348,7 @@ export const DEMO_MEETINGS: DemoMeeting[] = [
     aiSummary:
       '四半期レビュー。利用は安定。ただし山田課長が異動の可能性ありで、後任が決まるまで新規機能の意思決定は保留。引き継ぎ資料の準備を依頼された。',
     nextAction: '後任が決まり次第、再オンボーディング日程を相談',
-    commitments: [
-      { atSec: 882, text: '管理者向け操作手順を A4 1 枚に圧縮して送付' },
-    ],
+    commitments: [{ atSec: 882, text: '管理者向け操作手順を A4 1 枚に圧縮して送付' }],
   },
 ];
 
@@ -369,8 +365,7 @@ export const DEMO_RECORDINGS: DemoRecording[] = [
     durationSec: 2_712, // 45m12s
     transcriptExcerpt:
       '中村: 「昨年実績で 60 ライセンス使い切ったので、来期は 90 で組みたい。ただし 3 年契約にできるなら、価格面で何か工夫してもらえないかと思っています」鈴木: 「3 年契約の場合の特別単価は社内で確認できますので、5/13 までに見積書をお送りします」',
-    aiSummary:
-      '拡張ライセンス商談。3 年契約での価格調整に前向きな雰囲気。導入支援 SLA は維持。',
+    aiSummary: '拡張ライセンス商談。3 年契約での価格調整に前向きな雰囲気。導入支援 SLA は維持。',
     speakerSplit: [
       { name: '鈴木 美咲', pct: 42 },
       { name: '中村 一郎', pct: 58 },
@@ -524,8 +519,8 @@ export function relativeDayJp(iso: string, now: Date): string {
  * fixtures は時系列順ではないため、表示前に必ずこの関数で並べ替える。
  */
 export function nextUpcomingMeeting(now: Date): DemoMeeting | undefined {
-  const upcoming = DEMO_MEETINGS
-    .filter((m) => m.stage === 'scheduled' && new Date(m.scheduledAt) >= now)
-    .sort((a, b) => +new Date(a.scheduledAt) - +new Date(b.scheduledAt));
+  const upcoming = DEMO_MEETINGS.filter(
+    (m) => m.stage === 'scheduled' && new Date(m.scheduledAt) >= now,
+  ).sort((a, b) => +new Date(a.scheduledAt) - +new Date(b.scheduledAt));
   return upcoming[0];
 }

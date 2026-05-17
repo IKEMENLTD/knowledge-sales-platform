@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { LogoMark } from '@/components/brand/logo';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 /**
  * Editorial landing — "Sumi & Cinnabar" brand presence.
@@ -21,7 +21,9 @@ export default function HomePage() {
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12 flex-1 animate-fade-up">
         <div className="lg:col-span-8 space-y-8">
           <div className="flex items-center gap-3 text-cinnabar">
-            <span aria-hidden className="inkan size-9 rounded text-base font-display">K</span>
+            <span aria-hidden className="inkan size-9 rounded text-base font-display">
+              K
+            </span>
             <span className="kicker text-cinnabar">商談、ナレッジに。</span>
           </div>
           <h1 className="display text-[2.625rem] md:text-[4.5rem] font-semibold leading-[1.02] tracking-[-0.035em] text-balance">
@@ -30,8 +32,8 @@ export default function HomePage() {
             会社の知見に変える。
           </h1>
           <p className="max-w-prose text-lg md:text-xl leading-relaxed text-foreground/75">
-            <strong className="font-semibold text-foreground">Zoom 録画・名刺・メール</strong>
-            を AI が構造化し、商談ごとの要点・約束事項・次の一手を、組織の財産として残します。
+            <strong className="font-semibold text-foreground">Zoom 録画・名刺・メール</strong>を AI
+            が構造化し、商談ごとの要点・約束事項・次の一手を、組織の財産として残します。
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-4">

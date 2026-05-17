@@ -1,11 +1,11 @@
 'use client';
 
-import { ChevronDown, FileText, ShieldCheck } from 'lucide-react';
-import { useId, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { acceptTerms } from '@/lib/auth/onboarding';
 import { cn } from '@/lib/utils';
+import { ChevronDown, FileText, ShieldCheck } from 'lucide-react';
+import { useId, useState } from 'react';
 
 type Props = {
   termsBody: string;
@@ -44,7 +44,8 @@ export function StepConsent({
           利用規約と個人情報の取り扱いを、ご確認ください。
         </h2>
         <p className="text-sm leading-relaxed text-muted-foreground max-w-prose">
-          同意の記録は安全に保管されます。あとから「設定 → プライバシー」画面で内容と同意日時を確認できます。
+          同意の記録は安全に保管されます。あとから「設定 →
+          プライバシー」画面で内容と同意日時を確認できます。
         </p>
       </header>
 
@@ -113,12 +114,7 @@ export function StepConsent({
       </fieldset>
 
       <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-2">
-        <SubmitButton
-          variant="cinnabar"
-          size="lg"
-          disabled={!canSubmit}
-          pendingLabel="記録中…"
-        >
+        <SubmitButton variant="cinnabar" size="lg" disabled={!canSubmit} pendingLabel="記録中…">
           同意して次へ
         </SubmitButton>
       </div>
@@ -154,7 +150,9 @@ function DocumentDetail({
       >
         <Icon aria-hidden strokeWidth={1.6} className="size-4 shrink-0 text-cinnabar" />
         <span className="display text-sm font-semibold tracking-crisp">{title}</span>
-        <span className="kicker">v{version} · sha256:{hash.slice(0, 8)}</span>
+        <span className="kicker">
+          v{version} · sha256:{hash.slice(0, 8)}
+        </span>
         <ChevronDown
           aria-hidden
           className="ml-auto size-4 text-muted-foreground transition-transform duration-fast ease-sumi group-open:rotate-180"

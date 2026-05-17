@@ -1,8 +1,8 @@
-import Link from 'next/link';
-import type { ReactNode } from 'react';
 import { Logo } from '@/components/brand/logo';
 import { signOut } from '@/lib/auth/actions';
 import type { AppUser } from '@/lib/auth/server';
+import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { HeaderNav, type NavItem } from './header-nav';
 import { MobileBottomNav } from './mobile-bottom-nav';
 import { SignOutButton } from './signout-button';
@@ -15,9 +15,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/search', label: '検索' },
 ];
 
-const ADMIN_ITEMS: NavItem[] = [
-  { href: '/admin/users', label: 'メンバー', requireRole: 'admin' },
-];
+const ADMIN_ITEMS: NavItem[] = [{ href: '/admin/users', label: 'メンバー', requireRole: 'admin' }];
 
 /**
  * Editorial app shell.
@@ -38,10 +36,7 @@ export function AppShell({
   const items = user.role === 'admin' ? [...NAV_ITEMS, ...ADMIN_ITEMS] : NAV_ITEMS;
 
   return (
-    <div
-      className="min-h-dvh flex flex-col"
-      style={{ ['--app-header-h' as string]: '3.5rem' }}
-    >
+    <div className="min-h-dvh flex flex-col" style={{ ['--app-header-h' as string]: '3.5rem' }}>
       <header
         className="sticky top-0 z-40 w-full pt-safe bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/72"
         style={{ boxShadow: 'inset 0 -1px 0 hsl(var(--border) / 0.6)' }}

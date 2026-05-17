@@ -10,7 +10,7 @@
  * - 同期: Service Worker の Background Sync で `process_business_card` 等のキューを送出。
  */
 
-import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
+import { type DBSchema, type IDBPDatabase, openDB } from 'idb';
 
 export const DB_NAME = 'ksp-offline';
 export const DB_VERSION = 1;

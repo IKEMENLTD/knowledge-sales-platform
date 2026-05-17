@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
 import { AppShell } from '@/components/layout/app-shell';
 import { requireUser } from '@/lib/auth/server';
+import type { ReactNode } from 'react';
 
 /**
  * 認証必須レイアウト。

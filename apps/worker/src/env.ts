@@ -71,6 +71,28 @@ const schema = z.object({
 
   // Feature flags / A/B (P2 optional)
   AB_HASH_SECRET: z.string().min(1).optional(),
+
+  // Provider override (Round 3 Whisper 切替). 'auto' は OPENAI_API_KEY 有無で判定する。
+  TRANSCRIBE_PROVIDER: z
+    .enum(['auto', 'mock', 'whisper', 'openai'])
+    .default('auto'),
+
+  // Summarize provider override (Round 4 ClaudeProvider 切替).
+  //   - 'auto' は ANTHROPIC_API_KEY 有無で判定 (無ければ Mock)
+  //   - 'mock' は固定 fixture を返す Mock
+  //   - 'claude' / 'anthropic' は Anthropic Messages API (claude-sonnet-4-5) を呼ぶ
+  SUMMARIZE_PROVIDER: z
+    .enum(['auto', 'mock', 'claude', 'anthropic'])
+    .default('auto'),
+
+  // OCR provider override (Round 4 GoogleVisionProvider 切替).
+  //   - 'auto' は GOOGLE_VISION_API_KEY 有無で判定 (無ければ Mock)
+  //   - 'mock' は固定 fixture を返す Mock
+  //   - 'gcv' は Google Cloud Vision REST (DOCUMENT_TEXT_DETECTION) を呼ぶ
+  // Claude 補強は Phase2 で別 enum を足す想定 (今は雛形のみ残置)。
+  OCR_PROVIDER: z.enum(['auto', 'mock', 'gcv']).default('auto'),
+  // Phase1 では Google Vision のみ。Anthropic OCR は ANTHROPIC_API_KEY を流用するため独自 key は持たない。
+  GOOGLE_VISION_API_KEY: z.string().optional(),
 });
 
 export const env = schema.parse(process.env);

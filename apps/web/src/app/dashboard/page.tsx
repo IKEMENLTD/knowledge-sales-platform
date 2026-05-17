@@ -1,8 +1,8 @@
+import { Card, CardContent } from '@/components/ui/card';
+import { requireUser } from '@/lib/auth/server';
 import { ArrowUpRight, Calendar, IdCard, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Card, CardContent } from '@/components/ui/card';
-import { requireUser } from '@/lib/auth/server';
 
 export const metadata = { title: 'ホーム' };
 
@@ -28,10 +28,7 @@ export default async function DashboardPage() {
     <div className="space-y-10 max-w-5xl mx-auto">
       <div className="flex items-baseline justify-between border-t-2 border-foreground pt-3 animate-fade-in">
         <p className="kicker">№ 01 — ホーム</p>
-        <time
-          className="kicker tabular"
-          dateTime={new Date().toISOString().slice(0, 10)}
-        >
+        <time className="kicker tabular" dateTime={new Date().toISOString().slice(0, 10)}>
           {new Intl.DateTimeFormat('ja-JP', {
             month: 'long',
             day: 'numeric',

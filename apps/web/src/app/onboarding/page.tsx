@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/auth/server';
 import { describeOnboardingError } from '@/lib/onboarding/messages';
 import {
@@ -9,17 +8,14 @@ import {
   TERMS_HASH,
   TERMS_VERSION,
 } from '@/lib/onboarding/policy-document';
-import {
-  getOnboardingState,
-  isFullyOnboarded,
-  isStepDone,
-} from '@/lib/onboarding/state';
+import { getOnboardingState, isFullyOnboarded, isStepDone } from '@/lib/onboarding/state';
+import { redirect } from 'next/navigation';
 import { ErrorFocusAlert } from './_components/error-focus';
-import { OnboardingStepper, type Step } from './_components/stepper';
 import { StepCalendar } from './_components/step-calendar';
 import { StepConsent } from './_components/step-consent';
 import { StepDone } from './_components/step-done';
 import { StepSample } from './_components/step-sample';
+import { OnboardingStepper, type Step } from './_components/stepper';
 
 export const metadata = { title: 'はじめての設定' };
 export const dynamic = 'force-dynamic';
@@ -50,10 +46,7 @@ function buildStepperState(
   const calendarStatus = isStepDone(state, 'calendar');
   const sampleStatus = isStepDone(state, 'sample');
 
-  const status = (
-    id: Step['id'],
-    stepStatus: 'done' | 'skipped' | 'pending',
-  ): Step['status'] => {
+  const status = (id: Step['id'], stepStatus: 'done' | 'skipped' | 'pending'): Step['status'] => {
     if (stepStatus === 'done') return 'done';
     if (stepStatus === 'skipped') return 'skipped';
     if (active === id) return 'active';
@@ -113,7 +106,8 @@ export default async function OnboardingPage({
           ようこそ、{user.fullName ?? user.email?.split('@')[0] ?? ''} さん。
         </h1>
         <p className="text-base leading-relaxed text-muted-foreground max-w-prose">
-          ksp を使い始める前に、3 分だけ最初の設定を整えます。途中で止めても、次回ログインしたときに続きから再開できます。
+          ksp を使い始める前に、3
+          分だけ最初の設定を整えます。途中で止めても、次回ログインしたときに続きから再開できます。
         </p>
       </header>
 

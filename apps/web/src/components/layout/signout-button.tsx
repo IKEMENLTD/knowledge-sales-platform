@@ -1,8 +1,8 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import { useFormStatus } from 'react-dom';
-import { Button } from '@/components/ui/button';
 
 /** form action={signOut} 用の SubmitButton。pending 時に disabled + aria-busy。 */
 export function SignOutButton() {

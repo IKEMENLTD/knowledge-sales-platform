@@ -3,11 +3,28 @@
 /**
  * LLM 1 リクエスト/会議あたりの USD 上限。
  * 22_feature_flags_ab / 12_cost_estimate v2.2 の kill switch 閾値。
+ *
+ * Round2 CTO 指摘 (Round3 fix):
+ *   perMeetingUsd=0.5 だと 90分商談 + 25MB Whisper + Claude 要約で実推定 $0.48-$0.62
+ *   になり、超過頻発で kill switch が誤発火する。Whisper $0.006/min × 90 = $0.54 単独で
+ *   既に 0.5 を上回るため、現実的な上限として $1.20 に引き上げ (90分上限想定)。
+ *   per-org 月次キャップ (12_cost_estimate) は別 layer で enforce。
  */
 export const COST_CAPS = {
   perConversationUsd: 0.1,
-  perMeetingUsd: 0.5,
+  perMeetingUsd: 1.2,
 } as const;
+
+/**
+ * Round2 CTO 指摘 (Round3 fix): DEFAULT_ORG_ID の hardcode が 5+ 箇所に散在
+ * (apps/worker/src/jobs/embed.ts / ocr.ts / apps/web/src/app/api/search/click/route.ts 等)。
+ * マルチテナント cutover (Phase2) の際に grep 漏れがあると本番で全 org が衝突する。
+ * single source of truth として shared/constants.ts に置く。
+ *
+ * Phase1 シングルテナント環境のみ参照される。Phase2 で `app.org_id` GUC SET LOCAL を
+ * middleware 強制した段階でこの定数の参照箇所は全削除予定。
+ */
+export const DEFAULT_ORG_ID = '00000000-0000-0000-0000-000000000001' as const;
 
 /**
  * オフライン (PWA) 動作時のローカルキュー上限。

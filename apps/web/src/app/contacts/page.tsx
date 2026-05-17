@@ -1,5 +1,3 @@
-import { AlertTriangle, ArrowUpRight, CheckCircle2, IdCard, Plus, Search } from 'lucide-react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -11,6 +9,8 @@ import {
   formatDateJp,
 } from '@/lib/demo/fixtures';
 import { cn } from '@/lib/utils';
+import { AlertTriangle, ArrowUpRight, CheckCircle2, IdCard, Plus, Search } from 'lucide-react';
+import Link from 'next/link';
 
 export const metadata = { title: '名刺' };
 
@@ -43,8 +43,7 @@ export default async function ContactsPage(props: {
   const total = filtered.length;
   const groups = groupByStatus(filtered);
   const needsReview =
-    (groups.get('pending_review')?.length ?? 0) +
-    (groups.get('duplicate_suspect')?.length ?? 0);
+    (groups.get('pending_review')?.length ?? 0) + (groups.get('duplicate_suspect')?.length ?? 0);
 
   // 空グループをスキップしながら通し採番。トップ kicker は № 01 / 検索 box が № 02 扱い相当だが
   // セクションのみ採番する (検索は header 内)。最初のセクション = № 02 から開始。
@@ -180,26 +179,19 @@ function ContactCard({ contact }: { contact: DemoContact }) {
   const href = `/contacts/${contact.id}/review`;
   return (
     <Link href={href as never} className="group block focus-visible:outline-none">
-      <Card
-        interactive
-        className="h-full p-5 space-y-4 focus-visible:shadow-focus-ring"
-      >
+      <Card interactive className="h-full p-5 space-y-4 focus-visible:shadow-focus-ring">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1 min-w-0">
             <p className="display text-base font-semibold tracking-crisp truncate">
               {contact.fullName}
             </p>
-            <p className="text-xs text-muted-foreground truncate">
-              {contact.furigana}
-            </p>
+            <p className="text-xs text-muted-foreground truncate">{contact.furigana}</p>
           </div>
           <StatusBadge status={contact.status} />
         </div>
 
         <div className="space-y-1.5">
-          <p className="text-sm font-medium tracking-crisp truncate">
-            {contact.companyName}
-          </p>
+          <p className="text-sm font-medium tracking-crisp truncate">{contact.companyName}</p>
           <p className="text-xs text-muted-foreground truncate">{contact.title}</p>
         </div>
 

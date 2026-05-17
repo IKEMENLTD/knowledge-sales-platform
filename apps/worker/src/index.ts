@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { Server } from 'node:http';
 import { serve } from '@hono/node-server';
 import { Hono, type Context } from 'hono';
 import type { Logger } from 'pino';
@@ -10,8 +11,10 @@ import {
   httpRequestsTotal,
   renderMetrics,
 } from './lib/metrics.js';
+import { closePgmq } from './lib/pgmq.js';
 import { health } from './routes/health.js';
 import { webhooks } from './routes/webhooks.js';
+import { startJobTickers, stopJobTickers } from './jobs/index.js';
 
 // 1) Sentry init は他の処理より先に。env.SENTRY_DSN が無ければ no-op。
 initSentry();
@@ -81,6 +84,70 @@ app.onError((err, c: Context<{ Variables: Variables }>) => {
   return c.json({ error: 'internal_error' }, 500);
 });
 
-serve({ fetch: app.fetch, port: env.PORT }, (info) => {
+// pgmq consumer tickers (Phase2B T-009): NODE_ENV=test では no-op。
+startJobTickers();
+
+const httpServer = serve({ fetch: app.fetch, port: env.PORT }, (info) => {
   logger.info({ port: info.port, env: env.NODE_ENV }, 'worker listening');
+}) as Server;
+
+/**
+ * Graceful shutdown (Round 2 SRE P1-SRE-01)。
+ *
+ * SIGTERM (PaaS / Kubernetes) or SIGINT (Ctrl-C) を受けたら:
+ *   1. setInterval を止め、現在進行中の tick の完了を最大 15 秒待つ
+ *   2. HTTP listener を close (新規 conn 拒否 + in-flight 完了待ち)
+ *   3. pgmq の singleton postgres-js 接続を end
+ *   4. process.exit(0)
+ *
+ * 何度も呼ばれても 2 回目以降は no-op (`stopping` フラグ)。
+ * 全体タイムアウトは 25 秒で、それを超えたら exit(1)。
+ */
+let stopping = false;
+async function shutdown(signal: string): Promise<void> {
+  if (stopping) return;
+  stopping = true;
+  const log = logger.child({ op: 'shutdown', signal });
+  log.info('graceful shutdown initiated');
+
+  const overallTimeout = setTimeout(() => {
+    log.error('graceful shutdown timed out (25s); forcing exit(1)');
+    process.exit(1);
+  }, 25_000);
+  overallTimeout.unref();
+
+  try {
+    // 1) tick interval を止めて in-flight tick を待つ
+    await stopJobTickers(15_000);
+    log.info('job tickers stopped');
+
+    // 2) HTTP server を閉じる (新規 conn を拒否 + 既存を排出)
+    await new Promise<void>((resolve) => {
+      httpServer.close((err) => {
+        if (err) {
+          log.warn({ err: err.message }, 'http server close errored');
+        }
+        resolve();
+      });
+      // 5 秒猶予で強制 close
+      setTimeout(() => resolve(), 5_000).unref();
+    });
+    log.info('http server closed');
+
+    // 3) pgmq 接続を閉じる
+    await closePgmq();
+    log.info('pgmq connection closed');
+  } catch (err) {
+    log.error({ err: (err as Error).message }, 'shutdown error (continuing exit)');
+  } finally {
+    clearTimeout(overallTimeout);
+    process.exit(0);
+  }
+}
+
+process.on('SIGTERM', () => {
+  shutdown('SIGTERM').catch(() => process.exit(1));
+});
+process.on('SIGINT', () => {
+  shutdown('SIGINT').catch(() => process.exit(1));
 });

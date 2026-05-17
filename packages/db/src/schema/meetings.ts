@@ -1,5 +1,15 @@
 import { sql } from 'drizzle-orm';
-import { check, date, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  check,
+  date,
+  index,
+  integer,
+  numeric,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { orgIdColumn } from './_shared.js';
 import { contacts } from './contacts.js';
 import { users } from './users.js';
@@ -59,6 +69,12 @@ export const meetings = pgTable(
      * P1 では型のみ uuid (FK 制約なし)。
      */
     contractId: uuid('contract_id'),
+    /** Phase2: 構造化「次の一手」 (migration 0036). */
+    nextAction: text('next_action'),
+    /** Phase2: 勝率 0..1 (migration 0036). */
+    winProbability: numeric('win_probability', { precision: 3, scale: 2 }),
+    /** Phase2: soft delete (migration 0036). */
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().default(sql`now()`),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().default(sql`now()`),
   },
@@ -68,6 +84,10 @@ export const meetings = pgTable(
     zoomIdx: index('meetings_zoom_idx').on(t.zoomMeetingId),
     ownerIdx: index('meetings_owner_idx').on(t.ownerUserId),
     orgOwnerIdx: index('meetings_org_owner_idx').on(t.orgId, t.ownerUserId),
+    winProbabilityRange: check(
+      'meetings_win_probability_range',
+      sql`${t.winProbability} is null or (${t.winProbability} >= 0 and ${t.winProbability} <= 1)`,
+    ),
   }),
 );
 
@@ -108,7 +128,37 @@ export const meetingAttendees = pgTable(
   }),
 );
 
+/**
+ * Phase2 で追加 (migration 0036)。ステージ遷移の audit / 滞留時間分析用。
+ * append-only。RLS で UPDATE/DELETE 不可。
+ */
+export const meetingStageTransitions = pgTable(
+  'meeting_stage_transitions',
+  {
+    orgId: orgIdColumn(),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    meetingId: uuid('meeting_id')
+      .notNull()
+      .references(() => meetings.id, { onDelete: 'cascade' }),
+    changedByUserId: uuid('changed_by_user_id')
+      .notNull()
+      .references(() => users.id),
+    fromStage: text('from_stage'),
+    toStage: text('to_stage').notNull(),
+    fromDealStatus: text('from_deal_status'),
+    toDealStatus: text('to_deal_status'),
+    reason: text('reason'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().default(sql`now()`),
+  },
+  (t) => ({
+    meetingIdx: index('meeting_stage_transitions_meeting_idx').on(t.meetingId),
+    orgIdx: index('meeting_stage_transitions_org_idx').on(t.orgId),
+  }),
+);
+
 export type Meeting = typeof meetings.$inferSelect;
 export type NewMeeting = typeof meetings.$inferInsert;
 export type MeetingAttendee = typeof meetingAttendees.$inferSelect;
 export type NewMeetingAttendee = typeof meetingAttendees.$inferInsert;
+export type MeetingStageTransition = typeof meetingStageTransitions.$inferSelect;
+export type NewMeetingStageTransition = typeof meetingStageTransitions.$inferInsert;

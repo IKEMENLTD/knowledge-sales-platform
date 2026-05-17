@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
 import { sanitizeNext } from '@/lib/auth/redirect';
 import { createServerClient } from '@/lib/supabase/server';
+import { NextResponse } from 'next/server';
 
 /**
  * Supabase OAuth callback。

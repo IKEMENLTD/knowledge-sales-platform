@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useEffect, useRef } from 'react';
 
 /**
  * `?error=` 付き遷移時に Alert へ自動で focus を移し、SR が確実にメッセージを読み上げるよう保証。

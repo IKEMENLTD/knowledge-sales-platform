@@ -1,5 +1,5 @@
-import { forwardRef, type HTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
+import { type HTMLAttributes, forwardRef } from 'react';
 
 /**
  * Editorial card — multi-layer shadow + hover lift。
@@ -7,31 +7,25 @@ import { cn } from '@/lib/utils';
  */
 type CardProps = HTMLAttributes<HTMLDivElement> & { interactive?: boolean };
 
-const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ className, interactive, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        'relative rounded-xl border border-border/70 bg-card text-card-foreground',
-        'shadow-sumi-sm shadow-inset-top',
-        'transition-[transform,box-shadow,border-color] duration-med ease-sumi',
-        interactive &&
-          'hover:-translate-y-0.5 hover:shadow-sumi-lg hover:border-border focus-within:shadow-sumi-lg cursor-pointer',
-        className,
-      )}
-      {...props}
-    />
-  ),
-);
+const Card = forwardRef<HTMLDivElement, CardProps>(({ className, interactive, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      'relative rounded-xl border border-border/70 bg-card text-card-foreground',
+      'shadow-sumi-sm shadow-inset-top',
+      'transition-[transform,box-shadow,border-color] duration-med ease-sumi',
+      interactive &&
+        'hover:-translate-y-0.5 hover:shadow-sumi-lg hover:border-border focus-within:shadow-sumi-lg cursor-pointer',
+      className,
+    )}
+    {...props}
+  />
+));
 Card.displayName = 'Card';
 
 const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn('flex flex-col gap-1.5 p-6 pb-4', className)}
-      {...props}
-    />
+    <div ref={ref} className={cn('flex flex-col gap-1.5 p-6 pb-4', className)} {...props} />
   ),
 );
 CardHeader.displayName = 'CardHeader';

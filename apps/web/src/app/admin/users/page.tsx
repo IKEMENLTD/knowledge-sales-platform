@@ -1,4 +1,3 @@
-import { Crown, MailPlus, MoreHorizontal, ShieldCheck, UserCheck, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -9,6 +8,7 @@ import {
   relativeDayJp,
 } from '@/lib/demo/fixtures';
 import { cn } from '@/lib/utils';
+import { Crown, MailPlus, MoreHorizontal, ShieldCheck, UserCheck, UserX } from 'lucide-react';
 
 export const metadata = { title: 'メンバー' };
 
@@ -20,7 +20,10 @@ const ROLE_TONE: Record<DemoRole, string> = {
   member: 'border-foreground/20 bg-card text-foreground',
 };
 
-const STATUS_TONE: Record<DemoMember['status'], { label: string; className: string; Icon: typeof UserCheck }> = {
+const STATUS_TONE: Record<
+  DemoMember['status'],
+  { label: string; className: string; Icon: typeof UserCheck }
+> = {
   active: {
     label: '稼働中',
     className: 'border-chitose/45 bg-chitose-muted/30 text-chitose',
@@ -62,12 +65,7 @@ export default function AdminUsersPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="default"
-            disabled
-            title="Phase 2 で実装予定"
-          >
+          <Button variant="outline" size="default" disabled title="Phase 2 で実装予定">
             <ShieldCheck aria-hidden className="size-4" />
             役割を見る
           </Button>
@@ -80,22 +78,31 @@ export default function AdminUsersPage() {
 
       <div className="hairline" aria-hidden />
 
-      <section
-        aria-label="メンバー一覧"
-        className="animate-fade-up [animation-delay:80ms]"
-      >
+      <section aria-label="メンバー一覧" className="animate-fade-up [animation-delay:80ms]">
         <Card className="overflow-hidden p-0">
           {/* desktop: table */}
           <table className="hidden md:table w-full text-sm">
             <caption className="sr-only">組織メンバーの一覧と役割・稼働状態</caption>
             <thead>
               <tr className="text-left text-[11px] uppercase tracking-[0.16em] text-muted-foreground border-b border-border/60">
-                <th scope="col" className="py-3 pl-5 pr-3 font-medium">メンバー</th>
-                <th scope="col" className="py-3 px-3 font-medium">部署</th>
-                <th scope="col" className="py-3 px-3 font-medium">役割</th>
-                <th scope="col" className="py-3 px-3 font-medium">状態</th>
-                <th scope="col" className="py-3 px-3 font-medium">最終ログイン</th>
-                <th scope="col" className="py-3 pr-5 pl-3 font-medium text-right">操作</th>
+                <th scope="col" className="py-3 pl-5 pr-3 font-medium">
+                  メンバー
+                </th>
+                <th scope="col" className="py-3 px-3 font-medium">
+                  部署
+                </th>
+                <th scope="col" className="py-3 px-3 font-medium">
+                  役割
+                </th>
+                <th scope="col" className="py-3 px-3 font-medium">
+                  状態
+                </th>
+                <th scope="col" className="py-3 px-3 font-medium">
+                  最終ログイン
+                </th>
+                <th scope="col" className="py-3 pr-5 pl-3 font-medium text-right">
+                  操作
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -183,7 +190,8 @@ export default function AdminUsersPage() {
       >
         <p className="kicker mb-2">引き継ぎポリシー</p>
         <p className="text-sm leading-relaxed text-foreground/85 max-w-prose">
-          停止扱いにすると、保有する商談・名刺・録画の所有権は指定した次の担当者に移ります。本人がログインを試みた場合は 403 を返し、最後の操作から 60 日後にアカウントは自動削除予定キューへ入ります。
+          停止扱いにすると、保有する商談・名刺・録画の所有権は指定した次の担当者に移ります。本人がログインを試みた場合は
+          403 を返し、最後の操作から 60 日後にアカウントは自動削除予定キューへ入ります。
         </p>
       </section>
     </div>

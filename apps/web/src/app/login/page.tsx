@@ -1,10 +1,10 @@
-import Link from 'next/link';
 import { LogoMark } from '@/components/brand/logo';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { signInWithGoogle } from '@/lib/auth/actions';
 import { sanitizeNext } from '@/lib/auth/redirect';
+import Link from 'next/link';
 
 export const metadata = { title: 'サインイン' };
 
@@ -110,17 +110,21 @@ export default async function LoginPage({
             </summary>
             <div className="mt-3 space-y-3 text-muted-foreground leading-relaxed">
               <p>
-                <span className="font-medium text-foreground">本人確認 (openid / email / profile)</span>
+                <span className="font-medium text-foreground">
+                  本人確認 (openid / email / profile)
+                </span>
                 <br />
                 ksp にログインしているのが、確かにあなたであることを Google に確認します。
               </p>
               <p>
                 <span className="font-medium text-foreground">Google カレンダー</span>
                 <br />
-                今日の商談予定をホームに自動で取り込みます。新しい予定を ksp から作ることもできます。
+                今日の商談予定をホームに自動で取り込みます。新しい予定を ksp
+                から作ることもできます。
               </p>
               <p className="text-xs">
-                Gmail や Drive の権限は、その機能をはじめて使うときに改めて伺います。今このタイミングでまとめて許可する必要はありません。
+                Gmail や Drive
+                の権限は、その機能をはじめて使うときに改めて伺います。今このタイミングでまとめて許可する必要はありません。
               </p>
             </div>
           </details>

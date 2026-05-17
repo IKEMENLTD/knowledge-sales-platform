@@ -1,8 +1,8 @@
 'use server';
 
-import { redirect } from 'next/navigation';
 import { env } from '@/lib/env';
 import { createServerClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 import { sanitizeNext } from './redirect';
 
 /**

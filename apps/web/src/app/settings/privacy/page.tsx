@@ -1,10 +1,10 @@
-import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { withdrawConsent } from '@/lib/auth/onboarding';
 import { requireUser } from '@/lib/auth/server';
 import { createServerClient } from '@/lib/supabase/server';
+import { AlertTriangle } from 'lucide-react';
 
 export const metadata = { title: 'プライバシー / 同意の管理' };
 export const dynamic = 'force-dynamic';
@@ -68,13 +68,19 @@ export default async function PrivacySettingsPage({
         <Alert variant="success" role="status" aria-live="polite" className="mb-6 animate-fade-up">
           <AlertTitle>同意を撤回しました</AlertTitle>
           <AlertDescription>
-            撤回の事実は append-only で記録されます。再利用するときは「ホーム」から再度同意フローを進めてください。
+            撤回の事実は append-only
+            で記録されます。再利用するときは「ホーム」から再度同意フローを進めてください。
           </AlertDescription>
         </Alert>
       ) : null}
 
       {params.error ? (
-        <Alert variant="destructive" role="alert" aria-live="assertive" className="mb-6 animate-fade-up">
+        <Alert
+          variant="destructive"
+          role="alert"
+          aria-live="assertive"
+          className="mb-6 animate-fade-up"
+        >
           <AlertTitle>撤回処理に失敗しました</AlertTitle>
           <AlertDescription>時間をおいて再度お試しください。</AlertDescription>
         </Alert>
@@ -120,7 +126,11 @@ export default async function PrivacySettingsPage({
                   >
                     <input type="hidden" name="consent_type" value={c.consent_type} />
                     <p className="text-xs text-muted-foreground flex items-start gap-2">
-                      <AlertTriangle aria-hidden strokeWidth={1.6} className="size-4 shrink-0 text-ochre" />
+                      <AlertTriangle
+                        aria-hidden
+                        strokeWidth={1.6}
+                        className="size-4 shrink-0 text-ochre"
+                      />
                       撤回すると、再ログイン時に再同意フローに戻ります。
                     </p>
                     <SubmitButton variant="outline" size="sm" pendingLabel="撤回中…">
@@ -139,7 +149,8 @@ export default async function PrivacySettingsPage({
       </section>
 
       <p className="mt-8 text-xs text-muted-foreground border-t border-border/60 pt-4">
-        本記録は append-only で audit 用に最長 7 年保持されます。同意撤回は本人 (auth.uid) のみが行えます。
+        本記録は append-only で audit 用に最長 7 年保持されます。同意撤回は本人 (auth.uid)
+        のみが行えます。
       </p>
     </main>
   );

@@ -1,9 +1,9 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { Calendar, LayoutDashboard, Menu, ScanLine, Search } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
 
 type Tab = {
   href: string;
@@ -69,9 +69,7 @@ export function MobileBottomNav() {
                       : 'text-muted-foreground hover:text-foreground active:bg-accent/60',
                 )}
               >
-                {!primary && active ? (
-                  <span aria-hidden className="nav-active-mark" />
-                ) : null}
+                {!primary && active ? <span aria-hidden className="nav-active-mark" /> : null}
                 <Icon
                   aria-hidden
                   strokeWidth={primary ? 2.25 : 1.75}

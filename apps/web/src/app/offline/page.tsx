@@ -1,25 +1,15 @@
+import { Button } from '@/components/ui/button';
 import { ArrowRight, Inbox, RotateCcw, ScanLine, Search } from 'lucide-react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 
 export const metadata = { title: 'オフライン' };
 
 function CloudOffIllustration() {
   return (
-    <svg
-      aria-hidden
-      viewBox="0 0 240 200"
-      className="w-full max-w-[300px] h-auto"
-      role="img"
-    >
+    <svg aria-hidden viewBox="0 0 240 200" className="w-full max-w-[300px] h-auto" role="img">
       <defs>
         <pattern id="gridOffline" width="20" height="20" patternUnits="userSpaceOnUse">
-          <path
-            d="M 20 0 L 0 0 0 20"
-            fill="none"
-            stroke="hsl(var(--border))"
-            strokeWidth="0.5"
-          />
+          <path d="M 20 0 L 0 0 0 20" fill="none" stroke="hsl(var(--border))" strokeWidth="0.5" />
         </pattern>
       </defs>
       <rect width="240" height="200" fill="url(#gridOffline)" opacity="0.6" />
