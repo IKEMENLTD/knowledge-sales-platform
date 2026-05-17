@@ -1,5 +1,6 @@
 import { ocrResultSchema, type OcrResult } from '@ksp/shared';
 import { logger } from '../logger.js';
+import { enrichWithClaude } from './claude-postprocess.js';
 
 /**
  * 名刺 OCR プロバイダ抽象 (Phase2B T-009, Round 4 で GoogleVision 本実装化)。
@@ -326,12 +327,24 @@ export class GoogleVisionProvider implements OcrProvider {
   readonly name = 'gcv';
 
   private readonly apiKey: string;
+  /**
+   * Phase2 P1-CT-07: Claude PROMPT-02 で 2nd-pass 補強するか。
+   *   - constructor で明示指定された場合はそれを使う
+   *   - 未指定なら env `OCR_CLAUDE_ENRICH` ('true'|'1'|'auto') を見る
+   *   - 'auto' は ANTHROPIC_API_KEY 有無で判定
+   */
+  private readonly enrichWithClaudeEnabled: boolean;
 
-  constructor(apiKey: string | undefined = process.env.GOOGLE_VISION_API_KEY) {
+  constructor(
+    apiKey: string | undefined = process.env.GOOGLE_VISION_API_KEY,
+    options: { enrichWithClaude?: boolean } = {},
+  ) {
     if (!apiKey || apiKey.length === 0) {
       throw new OcrNotConfiguredError('GOOGLE_VISION_API_KEY');
     }
     this.apiKey = apiKey;
+    this.enrichWithClaudeEnabled =
+      options.enrichWithClaude ?? readEnrichEnvFlag(process.env);
   }
 
   async recognize(imageBytes: Uint8Array, mime: string): Promise<OcrResult> {
@@ -478,8 +491,32 @@ export class GoogleVisionProvider implements OcrProvider {
       provider: 'gcv',
       estimatedCostUsd: VISION_USD_PER_REQUEST,
     };
-    return ocrResultSchema.parse(result);
+    const validated = ocrResultSchema.parse(result);
+
+    // ---- Phase2 P1-CT-07: Claude PROMPT-02 で 2nd-pass 補強 ----
+    // enrichWithClaude は失敗時に元の OcrResult をそのまま返す (throw しない)
+    if (this.enrichWithClaudeEnabled) {
+      return await enrichWithClaude(validated);
+    }
+    return validated;
   }
+}
+
+/**
+ * env から Claude 補強の有効化フラグを読む。
+ *
+ *   - 'true' / '1' / 'on' → 有効
+ *   - 'auto' → ANTHROPIC_API_KEY が有効値ならば有効 (test placeholder は除外)
+ *   - それ以外 / 未設定 → 無効 (Vision のみ)
+ */
+function readEnrichEnvFlag(envOverride: NodeJS.ProcessEnv): boolean {
+  const raw = (envOverride.OCR_CLAUDE_ENRICH ?? '').toLowerCase().trim();
+  if (raw === 'true' || raw === '1' || raw === 'on') return true;
+  if (raw === 'auto') {
+    const anth = envOverride.ANTHROPIC_API_KEY;
+    return Boolean(anth && anth.length > 0 && anth !== 'sk-ant-test');
+  }
+  return false;
 }
 
 function clamp01(x: number): number {
@@ -548,9 +585,11 @@ export class ClaudeProvider implements OcrProvider {
  * env 状況から OcrProvider を 1 つ選んで返す。
  *
  * 選択優先度:
- *   1. process.env.OCR_PROVIDER ('mock' | 'gcv' | 'auto') が明示されていればそれ
+ *   1. process.env.OCR_PROVIDER ('mock' | 'gcv' | 'gcv+claude' | 'auto') が明示されていればそれ
+ *      - 'gcv+claude' は GoogleVisionProvider に Claude PROMPT-02 補強を有効化して構築
  *      - ただし鍵がなくて構築失敗したら Mock に fallback
  *   2. 'auto' (default) は GOOGLE_VISION_API_KEY 有無で判定 (Whisper と同じパターン)
+ *      - OCR_CLAUDE_ENRICH が 'auto'/'true' なら Claude 補強も自動で ON
  *   3. 何もなければ Mock
  *
  * **常に成功する** (throw しない) のが規約。dev/test/CI で API key が無くても起動可能にする。
@@ -576,6 +615,22 @@ export function pickProvider(
       return new MockOcrProvider();
     }
   }
+  if (explicit === 'gcv+claude') {
+    // Phase2 P1-CT-07: GCV + Claude PROMPT-02 2nd-pass 補強モード。
+    // GOOGLE_VISION_API_KEY が無ければ Mock fallback。
+    // ANTHROPIC_API_KEY 不在は enrichWithClaude 内で warn + Vision 結果そのまま返す。
+    try {
+      return new GoogleVisionProvider(envOverride.GOOGLE_VISION_API_KEY, {
+        enrichWithClaude: true,
+      });
+    } catch (err) {
+      log.warn(
+        { err: (err as Error).message },
+        'GoogleVisionProvider (gcv+claude) unavailable, fallback to Mock',
+      );
+      return new MockOcrProvider();
+    }
+  }
   if (explicit === 'claude' || explicit === 'anthropic') {
     // Phase2 雛形。'auto' 経路では使わない。明示指定された場合のみ。
     try {
@@ -593,6 +648,7 @@ export function pickProvider(
   const gvKey = envOverride.GOOGLE_VISION_API_KEY;
   if (gvKey && gvKey.length > 0) {
     try {
+      // 'auto' 経路でも OCR_CLAUDE_ENRICH の env 判定により Claude 補強が自動 ON される
       return new GoogleVisionProvider(gvKey);
     } catch {
       // fallthrough

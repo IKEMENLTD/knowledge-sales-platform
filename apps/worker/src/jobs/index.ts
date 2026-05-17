@@ -2,6 +2,7 @@ import { logger } from '../lib/logger.js';
 import { pgmqMetrics } from '../lib/pgmq.js';
 import { pgmqQueueDepth } from '../lib/metrics.js';
 import { tickEmbed } from './embed.js';
+import { tickHandoffSla } from './handoff-sla.js';
 import { tickOcr } from './ocr.js';
 import { tickRecordingDownload } from './recording-download.js';
 import { tickRecordingSummarize } from './recording-summarize.js';
@@ -60,6 +61,9 @@ const TICK_ENTRIES: TickEntry[] = [
     fn: tickRecordingSummarize,
   },
   { name: 'embed', queue: 'generate_embeddings', fn: tickEmbed },
+  // Round2 P1 G-P0-2: handoff SLA escalate (pgmq を使わず notifications テーブルを
+  // 直接 poll する scan-style worker)。queue 名は metric 用にダミーで埋める。
+  { name: 'handoff.sla', queue: 'handoff_sla_virtual', fn: tickHandoffSla },
 ];
 
 /**

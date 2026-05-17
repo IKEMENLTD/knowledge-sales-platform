@@ -173,6 +173,8 @@ export function SearchForm({
           onChange={(e) => setQ(e.target.value)}
           placeholder="価格交渉でうまくいったケース"
           aria-label="ナレッジを検索"
+          /* Round 2 P1 a11y: グローバル `/` で focus できることを screen reader に伝える。 */
+          aria-keyshortcuts="/"
           autoComplete="off"
           spellCheck={false}
           className="bg-transparent outline-none text-base flex-1 placeholder:text-muted-foreground/70"

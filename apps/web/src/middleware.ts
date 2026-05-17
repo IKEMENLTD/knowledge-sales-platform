@@ -27,7 +27,10 @@ const PUBLIC_PATHS = new Set<string>([
 ]);
 
 const PUBLIC_PREFIXES = [
-  '/share/', // 公開共有リンク (Phase2)
+  '/share/', // 公開共有リンク (SC-46 / Round2 P1 GAP-R-P0-01)
+  // 共有 URL viewer 内部から呼ばれる公開検証 API。 POST /api/share-links (作成) は
+  // /api/* デフォルト (認証必須) のまま、code 解決のみ anon 通過させる。
+  '/api/share-links/',
   '/api/csp-report',
   '/api/health',
   '/_next/',
@@ -64,8 +67,28 @@ function getClientIp(request: NextRequest): string {
   return 'unknown';
 }
 
+/**
+ * Round 2 P1 E2E bypass:
+ *   `E2E_BYPASS_AUTH=true` かつ `NODE_ENV !== 'production'` 限定で、
+ *   `x-e2e-user` ヘッダを auth 済み user として通過させる。
+ *
+ *   ※ production では env ガードで完全に無効化されるため攻撃面にはならない。
+ *   ※ requireUser / requireApiUser 側の auth.getUser() は cookie session が
+ *      必要なため、本フラグ ON 時は cookie に bypass token を載せる方式は
+ *      使わず、Route Handler 側で `process.env.E2E_BYPASS_AUTH` を再評価する
+ *      設計 (lib/auth/server.ts を更新)。
+ */
+function isE2eBypassEnabled(): boolean {
+  return process.env.E2E_BYPASS_AUTH === 'true' && process.env.NODE_ENV !== 'production';
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // E2E bypass: header 検査して認証 redirect / レート制限を skip
+  if (isE2eBypassEnabled() && request.headers.get('x-e2e-user')) {
+    return NextResponse.next({ request });
+  }
 
   // /api/* レート制限を最優先で評価 (認証コスト前に弾く)
   if (shouldRateLimit(pathname)) {

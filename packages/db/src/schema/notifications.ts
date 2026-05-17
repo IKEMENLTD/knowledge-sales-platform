@@ -1,6 +1,6 @@
 import { notificationType as sharedNotificationType } from '@ksp/shared';
 import { sql } from 'drizzle-orm';
-import { boolean, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, index, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { orgIdColumn } from './_shared.js';
 import { users } from './users.js';
 
@@ -30,6 +30,23 @@ export const notifications = pgTable(
     body: text('body'),
     linkUrl: text('link_url'),
     isRead: boolean('is_read').notNull().default(false),
+    /**
+     * 0041 migration:
+     *   既読化されたタイムスタンプ。inbox 画面の「24h 内に既読化したもの」折りたたみ
+     *   や「未読 (`read_at IS NULL`) 件数 badge」の SELECT で使う。
+     *   is_read と冗長だが「いつ既読化したか」を保持できるため、UX 優先で追加。
+     */
+    readAt: timestamp('read_at', { withTimezone: true }),
+    /**
+     * 0041 migration:
+     *   ワーカー側 (handoff SLA escalate 等) が任意キーで追記する jsonb。
+     *   想定キー:
+     *     - escalated_at_48h / escalated_at_72h: ISO timestamp
+     *     - escalated_to: array of user id (manager / admin)
+     *     - originalNotificationId: handoff 元 notification id
+     *   default '{}' なので NULL にはならない。
+     */
+    metadata: jsonb('metadata').notNull().default(sql`'{}'::jsonb`),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().default(sql`now()`),
   },
   (t) => ({

@@ -43,12 +43,14 @@ export const POST = defineRoute(
     const storageKey = `${user.id}/${objectId}.${ext}`;
 
     // 既存 hash の重複チェック (RLS を通すため anon client 経由)。
+    // Round 4 P1 CTO MID: dedup を user.orgId スコープに限定 (Phase2 マルチテナント整合)
     let duplicateOf: string | null = null;
     try {
       const { data } = await supabase
         .from('contacts')
         .select('id')
         .eq('business_card_image_hash', body.contentSha256)
+        .eq('org_id', user.orgId)
         .is('deleted_at', null)
         .limit(1)
         .maybeSingle();

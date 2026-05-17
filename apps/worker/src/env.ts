@@ -89,10 +89,17 @@ const schema = z.object({
   //   - 'auto' は GOOGLE_VISION_API_KEY 有無で判定 (無ければ Mock)
   //   - 'mock' は固定 fixture を返す Mock
   //   - 'gcv' は Google Cloud Vision REST (DOCUMENT_TEXT_DETECTION) を呼ぶ
-  // Claude 補強は Phase2 で別 enum を足す想定 (今は雛形のみ残置)。
-  OCR_PROVIDER: z.enum(['auto', 'mock', 'gcv']).default('auto'),
+  //   - 'gcv+claude' は Phase2 P1-CT-07: GCV の後ろに Claude PROMPT-02 で 2nd-pass 補強
+  OCR_PROVIDER: z.enum(['auto', 'mock', 'gcv', 'gcv+claude']).default('auto'),
   // Phase1 では Google Vision のみ。Anthropic OCR は ANTHROPIC_API_KEY を流用するため独自 key は持たない。
   GOOGLE_VISION_API_KEY: z.string().optional(),
+  // Phase2 P1-CT-07: GoogleVisionProvider の後段で Claude PROMPT-02 補強を有効にするか。
+  //   - 'auto' は ANTHROPIC_API_KEY 有無で判定 (sk-ant-test placeholder は無効扱い)
+  //   - 'true' / '1' / 'on' は強制有効化
+  //   - default は false (Vision のみ)
+  OCR_CLAUDE_ENRICH: z
+    .enum(['false', 'true', '1', '0', 'on', 'off', 'auto'])
+    .default('false'),
 });
 
 export const env = schema.parse(process.env);

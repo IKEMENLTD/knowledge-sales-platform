@@ -1,6 +1,8 @@
 import { Logo } from '@/components/brand/logo';
 import { signOut } from '@/lib/auth/actions';
 import type { AppUser } from '@/lib/auth/server';
+import { createServerClient } from '@/lib/supabase/server';
+import { Bell } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { HeaderNav, type NavItem } from './header-nav';
@@ -19,13 +21,34 @@ const NAV_ITEMS: NavItem[] = [
 const ADMIN_ITEMS: NavItem[] = [{ href: '/admin/users', label: 'メンバー', requireRole: 'admin' }];
 
 /**
+ * Round2 P1 G-P1-4 fix:
+ *   ヘッダ右上の通知 bell + 未読件数 badge。
+ *   RLS notifications_self が user_id=auth.uid() を強制するので
+ *   `count(*) where read_at is null` だけで自分宛の未読数になる。
+ *   テーブル不在 (Phase1 初期環境) でも 0 を返す。
+ */
+async function fetchUnreadNotificationCount(): Promise<number> {
+  try {
+    const supabase = await createServerClient();
+    const { count, error } = await supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .is('read_at', null);
+    if (error) return 0;
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * Editorial app shell.
  *  - sticky header + cream paper background
  *  - safe-area-inset-top で notch 配慮
  *  - HeaderNav (md+) + MobileBottomNav (sm only)
  *  - bottomActionBar slot は ページ固有 1〜2 アクション用 (片手UI)
  */
-export function AppShell({
+export async function AppShell({
   user,
   children,
   bottomActionBar,
@@ -35,6 +58,7 @@ export function AppShell({
   bottomActionBar?: ReactNode;
 }) {
   const items = user.role === 'admin' ? [...NAV_ITEMS, ...ADMIN_ITEMS] : NAV_ITEMS;
+  const unreadCount = await fetchUnreadNotificationCount();
 
   return (
     <div className="min-h-dvh flex flex-col" style={{ ['--app-header-h' as string]: '3.5rem' }}>
@@ -62,6 +86,25 @@ export function AppShell({
               {user.fullName ?? user.email}
             </span>
             <span aria-hidden className="hidden sm:block h-5 w-px bg-border" />
+            {/* Round2 P1 G-P1-4: 通知 bell + 未読 badge。md 以上のみ表示 (sm では bottom-nav 経由)。 */}
+            <Link
+              href="/inbox"
+              className="hidden md:inline-flex relative items-center justify-center size-9 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:outline-none focus-visible:shadow-focus-ring transition-colors duration-fast ease-sumi"
+              aria-label={
+                unreadCount > 0 ? `受信箱 (未読 ${unreadCount} 件)` : '受信箱'
+              }
+            >
+              <Bell aria-hidden strokeWidth={1.6} className="size-4" />
+              {unreadCount > 0 ? (
+                <span
+                  aria-hidden
+                  className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-cinnabar text-cinnabar-foreground text-[10px] font-semibold tabular tracking-tight leading-none border-2 border-background"
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              ) : null}
+            </Link>
+            <span aria-hidden className="hidden md:block h-5 w-px bg-border" />
             {/* UX Round1 Desktop MID-D-04: ThemeToggle (system / light / dark) */}
             <ThemeToggle className="hidden md:inline-flex" />
             <span aria-hidden className="hidden md:block h-5 w-px bg-border" />

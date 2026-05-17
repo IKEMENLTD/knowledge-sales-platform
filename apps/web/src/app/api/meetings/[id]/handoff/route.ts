@@ -90,6 +90,9 @@ export async function POST(req: NextRequest, ctx: RouteParams): Promise<Response
       }
 
       // 3) notifications INSERT。
+      // Round2 P1 G-P0-2: handoff SLA escalate worker (apps/worker/src/jobs/handoff-sla.ts)
+      // が拾えるよう metadata に handoff コンテキストを残す。
+      // escalated_at_48h / escalated_at_72h は worker が後で追記する。
       const notificationPayload: Record<string, unknown> = {
         user_id: body.toUserId,
         type: 'handoff_pending',
@@ -97,6 +100,11 @@ export async function POST(req: NextRequest, ctx: RouteParams): Promise<Response
         body: body.draftNotes ?? null,
         link_url: `/meetings/${meetingId}`,
         is_read: false,
+        metadata: {
+          meetingId,
+          handoffFromUserId: user.id,
+          handoffFromName: user.fullName ?? user.email ?? null,
+        },
       };
       const { error: notifError } = await supabase
         .from('notifications')

@@ -21,6 +21,33 @@ function shouldUseInsecureFallback(): boolean {
 }
 
 /**
+ * Round 2 P1 E2E bypass:
+ *   `E2E_BYPASS_AUTH=true` かつ production 以外で、`requireUser`/`requireApiUser` が
+ *   Supabase auth.getUser() を skip し、固定 mock user を返す。
+ *
+ *   E2E spec 側で次のように cookie / header を投入する設計だが、
+ *   Next.js Route Handler 内では cookies()/headers() の同期取得が必要なため、
+ *   ここでは env のみで bypass を有効化し、固定 ID (E2E_USER_ID env) を採用する。
+ *
+ *   ※ production では env ガードで完全に無効化される。
+ */
+function isE2eBypassActive(): boolean {
+  return process.env.E2E_BYPASS_AUTH === 'true' && env.NODE_ENV !== 'production';
+}
+
+function makeE2eBypassUser(): AppUser {
+  return {
+    id: process.env.E2E_USER_ID ?? '00000000-0000-0000-0000-0000000000aa',
+    email: process.env.E2E_USER_EMAIL ?? 'e2e@ksp.local',
+    role: ((process.env.E2E_USER_ROLE as UserRole) ?? 'sales') as UserRole,
+    isActive: true,
+    fullName: 'E2E Test User',
+    orgId: process.env.E2E_ORG_ID ?? DEFAULT_ORG_ID,
+    onboardedAt: new Date(),
+  };
+}
+
+/**
  * `public.users.role` enum と整合させる (packages/db/src/schema/users.ts)。
  * Phase1 では sales / cs / manager / admin / legal の 5 つ。
  */
@@ -72,6 +99,15 @@ export async function getUser() {
  * @param options.role 必要最低 role を指定すると不足時 /403 redirect
  */
 export async function requireUser(options?: { role?: UserRole }): Promise<AppUser> {
+  // Round 2 P1 E2E bypass — production 以外限定
+  if (isE2eBypassActive()) {
+    const u = makeE2eBypassUser();
+    if (options?.role && ROLE_RANK[u.role] < ROLE_RANK[options.role]) {
+      redirect(`/403?reason=role&need=${options.role}`);
+    }
+    return u;
+  }
+
   const supabase = await createServerClient();
   const {
     data: { user },
@@ -185,6 +221,15 @@ export class AuthError extends Error {
 }
 
 export async function requireApiUser(options?: { role?: UserRole }): Promise<AppUser> {
+  // Round 2 P1 E2E bypass — production 以外限定
+  if (isE2eBypassActive()) {
+    const u = makeE2eBypassUser();
+    if (options?.role && ROLE_RANK[u.role] < ROLE_RANK[options.role]) {
+      throw new AuthError(403, 'forbidden', { reason: 'role', need: options.role });
+    }
+    return u;
+  }
+
   const supabase = await createServerClient();
   const {
     data: { user },

@@ -32,12 +32,14 @@ export const POST = defineRoute(
   { body: contactRegisterRequestSchema },
   async ({ user, supabase, body }) => {
     // 1) 既存 hash があれば再利用 (OCR 二重起動を防ぐ)。
+    //    Round 4 P1 CTO MID: dedup を user.orgId スコープに限定 (Phase2 マルチテナント整合)
     let existingId: string | null = null;
     try {
       const { data } = await supabase
         .from('contacts')
         .select('id')
         .eq('business_card_image_hash', body.contentSha256)
+        .eq('org_id', user.orgId)
         .is('deleted_at', null)
         .limit(1)
         .maybeSingle();
@@ -61,9 +63,11 @@ export const POST = defineRoute(
     }
 
     // 2) contacts INSERT。
+    //    Round 4 P1 CTO MID: org_id を user.orgId に明示。default 削除後 (Phase2) でも安全。
     const insertPayload: Record<string, unknown> = {
       owner_user_id: user.id,
       created_by_user_id: user.id,
+      org_id: user.orgId,
       name: '読み取り中…',
       business_card_image_url: body.storageKey,
       business_card_image_hash: body.contentSha256,

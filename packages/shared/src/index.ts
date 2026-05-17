@@ -5,3 +5,4 @@ export * from './contacts-normalize.js';
 export * from './search.js';
 export * from './meetings.js';
 export * from './recordings-detail.js';
+export * from './share-links.js';

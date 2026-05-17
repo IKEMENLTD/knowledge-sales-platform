@@ -130,6 +130,11 @@ function QueueRow({
 
   return (
     <Card
+      // Round 2 P1 e2e フック: tests/e2e/contacts-upload-flow.spec.ts が
+      // `[data-stage="done"]` を待機するため、stage を data 属性として露出する。
+      data-stage={stage}
+      data-testid="upload-queue-row"
+      data-filename={item.file.name}
       className={cn(
         'flex items-center gap-3 md:gap-4 p-3 md:p-4',
         'border-border/60 animate-fade-up',

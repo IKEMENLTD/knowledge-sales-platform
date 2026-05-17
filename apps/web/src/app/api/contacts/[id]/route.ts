@@ -67,6 +67,7 @@ export async function PATCH(req: NextRequest, ctx: RouteParams): Promise<Respons
       }
 
       // 2) company 解決 (companyName 指定時は upsert)。
+      //    Round 4 P1 CTO MID: org_id を user.orgId にスコープ限定。
       let resolvedCompanyId: string | null | undefined = body.companyId;
       if (resolvedCompanyId === undefined && body.companyName) {
         const trimmed = body.companyName.trim();
@@ -75,6 +76,7 @@ export async function PATCH(req: NextRequest, ctx: RouteParams): Promise<Respons
           .from('companies')
           .select('id')
           .eq('name', trimmed)
+          .eq('org_id', user.orgId)
           .limit(1)
           .maybeSingle();
         const foundRow = found as CompanyRow | null;
@@ -83,7 +85,7 @@ export async function PATCH(req: NextRequest, ctx: RouteParams): Promise<Respons
         } else {
           const { data: inserted, error: insertErr } = await supabase
             .from('companies')
-            .insert({ name: trimmed })
+            .insert({ name: trimmed, org_id: user.orgId })
             .select('id')
             .single();
           if (insertErr || !inserted) {
