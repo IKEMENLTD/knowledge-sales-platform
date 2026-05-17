@@ -206,7 +206,7 @@ export function MeetingCard({ meeting, dragHandleProps, isDragging }: MeetingCar
               <div className="flex items-start gap-2 text-xs">
                 <ChevronRight
                   aria-hidden
-                  strokeWidth={2}
+                  strokeWidth={1.6}
                   className="size-3.5 shrink-0 mt-0.5 text-cinnabar"
                 />
                 <span className="font-medium text-foreground line-clamp-2">

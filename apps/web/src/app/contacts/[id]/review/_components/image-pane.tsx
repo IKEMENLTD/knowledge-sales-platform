@@ -114,7 +114,7 @@ export function ImagePane({
               />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                <ScanSearch aria-hidden strokeWidth={1.4} className="size-8 opacity-50" />
+                <ScanSearch aria-hidden strokeWidth={1.6} className="size-8 opacity-50" />
                 <p className="text-xs">画像がまだ用意されていません</p>
               </div>
             )}

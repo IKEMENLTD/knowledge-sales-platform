@@ -51,7 +51,7 @@ export default async function DashboardPage() {
 
       <section
         aria-label="主要 KPI"
-        className="grid grid-cols-1 gap-4 md:grid-cols-3 animate-fade-up [animation-delay:80ms]"
+        className="grid grid-cols-1 gap-4 md:grid-cols-3 animate-fade-up [animation-delay:60ms]"
       >
         <KpiCard
           no="02"
@@ -87,7 +87,7 @@ export default async function DashboardPage() {
       */}
       <section
         aria-label="最初の一歩"
-        className="relative overflow-hidden rounded-2xl border border-foreground/10 bg-card shadow-sumi animate-fade-up [animation-delay:140ms]"
+        className="relative overflow-hidden rounded-2xl border border-foreground/10 bg-card shadow-sumi animate-fade-up [animation-delay:120ms]"
       >
         <div
           aria-hidden
@@ -152,7 +152,7 @@ function KpiCard({ no, kicker, metric, hint, Icon, cta }: KpiCardProps) {
         <div className="flex items-baseline gap-3">
           <Icon
             aria-hidden
-            strokeWidth={1.4}
+            strokeWidth={1.6}
             className="size-6 shrink-0 text-muted-foreground/60 group-hover:text-cinnabar/80 transition-colors duration-med ease-sumi"
           />
           <p

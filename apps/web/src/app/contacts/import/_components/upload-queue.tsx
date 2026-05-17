@@ -223,14 +223,14 @@ function StageLabel({ item }: { item: QueueItem }) {
     if (duplicateOf) {
       return (
         <p className="text-xs text-cinnabar flex items-center gap-1.5">
-          <AlertTriangle aria-hidden strokeWidth={1.8} className="size-3.5" />
+          <AlertTriangle aria-hidden strokeWidth={1.6} className="size-3.5" />
           <span>同じ名刺がすでに登録されています</span>
         </p>
       );
     }
     return (
       <p className="text-xs text-chitose flex items-center gap-1.5">
-        <CheckCircle2 aria-hidden strokeWidth={1.8} className="size-3.5" />
+        <CheckCircle2 aria-hidden strokeWidth={1.6} className="size-3.5" />
         <span>取り込み完了 — レビュー待ち</span>
       </p>
     );
@@ -239,14 +239,14 @@ function StageLabel({ item }: { item: QueueItem }) {
     if (endpointUnavailable) {
       return (
         <p className="text-xs text-cinnabar/90 flex items-center gap-1.5">
-          <AlertTriangle aria-hidden strokeWidth={1.8} className="size-3.5" />
+          <AlertTriangle aria-hidden strokeWidth={1.6} className="size-3.5" />
           <span>アップロード先がまだ準備中です</span>
         </p>
       );
     }
     return (
       <p className="text-xs text-destructive flex items-center gap-1.5">
-        <AlertTriangle aria-hidden strokeWidth={1.8} className="size-3.5" />
+        <AlertTriangle aria-hidden strokeWidth={1.6} className="size-3.5" />
         <span>{errorMessage ?? '取り込めませんでした'}</span>
       </p>
     );

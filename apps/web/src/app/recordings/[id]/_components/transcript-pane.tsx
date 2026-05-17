@@ -353,7 +353,7 @@ function SpeakerLabel({
           onClick={commit}
           className="size-7"
         >
-          <Check strokeWidth={1.8} className="size-3.5" />
+          <Check strokeWidth={1.6} className="size-3.5" />
         </Button>
         <Button
           type="button"
@@ -363,7 +363,7 @@ function SpeakerLabel({
           onClick={cancel}
           className="size-7"
         >
-          <X strokeWidth={1.8} className="size-3.5" />
+          <X strokeWidth={1.6} className="size-3.5" />
         </Button>
       </div>
     );

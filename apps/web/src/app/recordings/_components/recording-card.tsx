@@ -27,7 +27,7 @@ export function RecordingCard({
         <div className="grid grid-cols-1 md:grid-cols-[260px_1fr]">
           <div className="relative bg-gradient-to-br from-foreground/85 to-foreground/65 dark:from-foreground/20 dark:to-foreground/10 p-5 md:p-6 text-background min-h-[160px] flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="tabular text-[10px] uppercase tracking-[0.16em] text-background/65">
+              <span className="tabular text-[10px] uppercase tracking-kicker text-background/65">
                 {(index + 1).toString().padStart(2, '0')}
               </span>
               <div className="flex items-center gap-2">
@@ -41,15 +41,15 @@ export function RecordingCard({
                     サンプル
                   </span>
                 ) : null}
-                <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.16em] text-background/75">
-                  <Mic aria-hidden strokeWidth={1.8} className="size-3" />
+                <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-kicker text-background/75">
+                  <Mic aria-hidden strokeWidth={1.6} className="size-3" />
                   録画
                 </span>
               </div>
             </div>
 
             <div className="space-y-1">
-              <p className="text-[10px] uppercase tracking-[0.16em] text-background/65">
+              <p className="text-[10px] uppercase tracking-kicker text-background/65">
                 感情の流れ
               </p>
               <Sparkline values={recording.sentimentCurve} />
@@ -60,13 +60,13 @@ export function RecordingCard({
                 aria-hidden
                 className="inline-flex items-center justify-center size-10 rounded-full bg-cinnabar shadow-cinnabar-glow text-cinnabar-foreground"
               >
-                <Play strokeWidth={1.8} className="size-5 ml-0.5" />
+                <Play strokeWidth={1.6} className="size-5 ml-0.5" />
               </span>
               <div className="text-right">
                 <p className="display tabular text-base font-semibold text-background">
                   {formatDuration(recording.durationSec)}
                 </p>
-                <p className="text-[10px] uppercase tracking-[0.16em] text-background/70">
+                <p className="text-[10px] uppercase tracking-kicker text-background/70">
                   {formatDateJp(recording.recordedAt, true)}
                 </p>
               </div>

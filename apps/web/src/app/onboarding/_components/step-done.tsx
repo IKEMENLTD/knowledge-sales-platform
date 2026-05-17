@@ -88,9 +88,9 @@ export function StepDone({
                   aria-hidden
                 >
                   {isDone ? (
-                    <Check strokeWidth={2.5} className="size-3.5" />
+                    <Check strokeWidth={1.6} className="size-3.5" />
                   ) : isSkipped ? (
-                    <Minus strokeWidth={2.5} className="size-3.5" />
+                    <Minus strokeWidth={1.6} className="size-3.5" />
                   ) : (
                     <span className="text-[10px] font-display font-semibold">!</span>
                   )}

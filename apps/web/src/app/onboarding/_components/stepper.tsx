@@ -42,9 +42,9 @@ export function OnboardingStepper({ steps }: { steps: Step[] }) {
               )}
             >
               {isDone ? (
-                <Check aria-hidden strokeWidth={2.5} className="size-4" />
+                <Check aria-hidden strokeWidth={1.6} className="size-4" />
               ) : isSkipped ? (
-                <Pause aria-hidden strokeWidth={2.25} className="size-3.5" />
+                <Pause aria-hidden strokeWidth={1.6} className="size-3.5" />
               ) : (
                 <span className="display tabular text-sm font-semibold">{number}</span>
               )}

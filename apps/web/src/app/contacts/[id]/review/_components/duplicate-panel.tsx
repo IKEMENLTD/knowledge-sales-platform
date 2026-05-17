@@ -113,7 +113,7 @@ export function DuplicatePanel({
   };
 
   return (
-    <section aria-label="重複の候補" className="space-y-4 animate-fade-up [animation-delay:80ms]">
+    <section aria-label="重複の候補" className="space-y-4 animate-fade-up [animation-delay:60ms]">
       <div className="flex items-baseline justify-between">
         <div className="flex items-baseline gap-3">
           <span className="section-no text-base">№ 03</span>

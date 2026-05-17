@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { HeaderNav, type NavItem } from './header-nav';
 import { MobileBottomNav } from './mobile-bottom-nav';
 import { SignOutButton } from './signout-button';
+import { ThemeToggle } from './theme-toggle';
 
 const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard', label: 'ホーム' },
@@ -61,6 +62,9 @@ export function AppShell({
               {user.fullName ?? user.email}
             </span>
             <span aria-hidden className="hidden sm:block h-5 w-px bg-border" />
+            {/* UX Round1 Desktop MID-D-04: ThemeToggle (system / light / dark) */}
+            <ThemeToggle className="hidden md:inline-flex" />
+            <span aria-hidden className="hidden md:block h-5 w-px bg-border" />
             <form action={signOut}>
               <SignOutButton />
             </form>

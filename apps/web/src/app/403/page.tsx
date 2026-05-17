@@ -75,8 +75,17 @@ export default async function ForbiddenPage({
     <main
       id="main-content"
       tabIndex={-1}
-      className="mx-auto min-h-dvh max-w-2xl px-6 py-12 md:py-20 outline-none flex flex-col justify-center gap-8"
+      className="relative mx-auto min-h-dvh max-w-2xl px-6 py-12 md:py-20 outline-none flex flex-col justify-center gap-8"
     >
+      {/* UX Round1 Desktop HIGH-D-02 fix: editorial vertical hairline */}
+      <span
+        aria-hidden
+        className="hidden xl:block absolute left-[calc(50%-min(46vw,720px))] top-12 bottom-12 w-px bg-border/40"
+      />
+      <span
+        aria-hidden
+        className="hidden xl:block absolute right-[calc(50%-min(46vw,720px))] top-12 bottom-12 w-px bg-border/40"
+      />
       <div className="flex items-baseline justify-between border-t-2 border-foreground pt-3 animate-fade-in">
         <p className="kicker">アクセス制限</p>
         <p className="kicker">403</p>
@@ -120,6 +129,15 @@ export default async function ForbiddenPage({
         <Button asChild variant="outline" size="lg">
           <Link href="/login">サインインし直す</Link>
         </Button>
+      </div>
+
+      {/* UX Round2 LOW-D-09 fix: 落款 (inkan accent) — detail signature と同流派で 403 にも */}
+      <div className="flex justify-end pt-2">
+        <span
+          aria-hidden
+          className="inline-block size-3.5 rounded-[3px] bg-cinnabar/35"
+          title="落款"
+        />
       </div>
     </main>
   );

@@ -68,8 +68,17 @@ export default function OfflinePage() {
     <main
       id="main-content"
       tabIndex={-1}
-      className="mx-auto min-h-dvh max-w-2xl px-6 py-12 md:py-20 outline-none flex flex-col justify-center gap-8"
+      className="relative mx-auto min-h-dvh max-w-2xl px-6 py-12 md:py-20 outline-none flex flex-col justify-center gap-8"
     >
+      {/* UX Round1 Desktop HIGH-D-02 fix: xl+ で左右に細 vertical hairline を出して editorial frame に */}
+      <span
+        aria-hidden
+        className="hidden xl:block absolute left-[calc(50%-min(46vw,720px))] top-12 bottom-12 w-px bg-border/40"
+      />
+      <span
+        aria-hidden
+        className="hidden xl:block absolute right-[calc(50%-min(46vw,720px))] top-12 bottom-12 w-px bg-border/40"
+      />
       <div className="flex items-baseline justify-between border-t-2 border-foreground pt-3 animate-fade-in">
         <p className="kicker">通信状態</p>
         <p className="kicker">オフライン</p>
@@ -91,7 +100,7 @@ export default function OfflinePage() {
       <div className="flex flex-wrap items-center justify-center gap-3 animate-fade-up [animation-delay:120ms]">
         <Button asChild variant="cinnabar" size="lg">
           <Link href="/dashboard">
-            <RotateCcw aria-hidden strokeWidth={2} />
+            <RotateCcw aria-hidden strokeWidth={1.6} />
             <span>もう一度読み込む</span>
           </Link>
         </Button>
@@ -113,7 +122,7 @@ export default function OfflinePage() {
               >
                 <item.Icon
                   aria-hidden
-                  strokeWidth={1.5}
+                  strokeWidth={1.6}
                   className="size-5 shrink-0 mt-0.5 text-cinnabar/85 transition-colors duration-med ease-sumi"
                 />
                 <div className="flex-1">
@@ -131,6 +140,15 @@ export default function OfflinePage() {
           ))}
         </ul>
       </section>
+
+      {/* UX Round2 LOW-D-09 fix: 落款 (inkan accent) — offline にも detail signature 流派 */}
+      <div className="flex justify-end pt-2">
+        <span
+          aria-hidden
+          className="inline-block size-3.5 rounded-[3px] bg-cinnabar/35"
+          title="落款"
+        />
+      </div>
     </main>
   );
 }

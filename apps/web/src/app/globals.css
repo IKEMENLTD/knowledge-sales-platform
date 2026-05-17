@@ -168,6 +168,17 @@
     font-family: var(--font-display), var(--font-jp), system-ui, sans-serif;
     letter-spacing: -0.018em;
     font-feature-settings: "ss01", "cv11";
+    /* UX Round1 Mobile HIGH-M-01 + Round2 LOW-M-15 fix: 日本語禁則 — 単語途中改行を抑制し、
+       行頭禁則 (。, 」 等) も `line-break: strict` で正しく扱う。 */
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
+    line-break: strict;
+  }
+  /* 本文 p / li にも禁則を適用 (見出しだけだと本文の単語途中改行が残る) */
+  p, li {
+    line-break: strict;
+    overflow-wrap: anywhere;
   }
 
   /* Editorial kicker (small all-caps label) */

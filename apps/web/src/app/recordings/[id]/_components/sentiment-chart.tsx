@@ -156,14 +156,14 @@ export function SentimentChart({
                 x={currentSec}
                 stroke="hsl(var(--cinnabar))"
                 strokeOpacity={0.6}
-                strokeWidth={1.5}
+                strokeWidth={1.6}
               />
             ) : null}
             <Line
               type="monotone"
               dataKey="value"
               stroke="hsl(var(--cinnabar))"
-              strokeWidth={1.8}
+              strokeWidth={1.6}
               dot={{ r: 2, fill: 'hsl(var(--cinnabar))' }}
               activeDot={{
                 r: 5,

@@ -62,7 +62,7 @@ export function ConfidenceBadge({
       aria-label={`OCR 信頼度 ${label} (${pct}%)`}
       title={`OCR 信頼度: ${pct}%`}
     >
-      <Icon aria-hidden strokeWidth={1.8} className="size-3" />
+      <Icon aria-hidden strokeWidth={1.6} className="size-3" />
       {label} {pct}%
     </span>
   );

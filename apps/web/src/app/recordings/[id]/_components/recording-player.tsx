@@ -321,7 +321,7 @@ export const RecordingPlayer = forwardRef<PlayerController, RecordingPlayerProps
                   'bg-cinnabar text-cinnabar-foreground shadow-cinnabar-glow',
                 )}
               >
-                <Play strokeWidth={1.8} className="size-7 ml-1" />
+                <Play strokeWidth={1.6} className="size-7 ml-1" />
               </span>
             </button>
           ) : null}
@@ -360,9 +360,9 @@ export const RecordingPlayer = forwardRef<PlayerController, RecordingPlayerProps
                 aria-label={isPlaying ? '一時停止' : '再生'}
               >
                 {isPlaying ? (
-                  <Pause strokeWidth={1.8} className="size-4" />
+                  <Pause strokeWidth={1.6} className="size-4" />
                 ) : (
-                  <Play strokeWidth={1.8} className="size-4" />
+                  <Play strokeWidth={1.6} className="size-4" />
                 )}
                 <span>{isPlaying ? '停止' : '再生'}</span>
               </Button>

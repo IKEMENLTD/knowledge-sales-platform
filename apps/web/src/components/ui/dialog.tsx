@@ -46,6 +46,9 @@ const DialogContent = forwardRef<
         'fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4',
         'border border-border bg-card text-card-foreground p-6',
         'rounded-2xl shadow-sumi-xl',
+        // UX Round 1 Mobile HIGH-M-02 fix: keyboard 出現時 / 縦長 dialog で操作不能
+        // 化を防ぐ。svh (small viewport height) で IME 上昇後も常に枠内に収まる。
+        'max-h-[85svh] overflow-y-auto',
         '[overscroll-behavior:contain]',
         'data-[state=open]:animate-scale-in',
         'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',

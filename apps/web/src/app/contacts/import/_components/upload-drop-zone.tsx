@@ -186,7 +186,7 @@ function DropFeedbackList({ feedback }: { feedback: DropFeedback }) {
             'bg-cinnabar-muted/40 px-3 py-2 text-sm text-cinnabar',
           )}
         >
-          <AlertTriangle aria-hidden strokeWidth={1.8} className="size-4 mt-0.5 shrink-0" />
+          <AlertTriangle aria-hidden strokeWidth={1.6} className="size-4 mt-0.5 shrink-0" />
           <span className="leading-snug">{w}</span>
         </output>
       ))}
@@ -199,7 +199,7 @@ function DropFeedbackList({ feedback }: { feedback: DropFeedback }) {
           )}
           role="alert"
         >
-          <AlertTriangle aria-hidden strokeWidth={1.8} className="size-4 mt-0.5 shrink-0" />
+          <AlertTriangle aria-hidden strokeWidth={1.6} className="size-4 mt-0.5 shrink-0" />
           <span className="leading-snug">{r}</span>
         </div>
       ))}

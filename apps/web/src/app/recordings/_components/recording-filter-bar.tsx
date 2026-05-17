@@ -101,7 +101,7 @@ export function RecordingFilterBar({
         e.preventDefault();
       }}
     >
-      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-kicker text-muted-foreground">
         <Filter aria-hidden strokeWidth={1.6} className="size-3.5" />
         絞り込み
       </div>
@@ -182,7 +182,7 @@ export function RecordingFilterBar({
             'disabled:opacity-40 disabled:cursor-not-allowed',
           )}
         >
-          <X aria-hidden strokeWidth={1.8} className="size-3.5" />
+          <X aria-hidden strokeWidth={1.6} className="size-3.5" />
           クリア
         </button>
       </div>

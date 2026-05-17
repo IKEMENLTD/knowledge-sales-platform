@@ -125,7 +125,7 @@ function ResultRow({
                   tone,
                 )}
               >
-                <Icon aria-hidden strokeWidth={1.8} className="size-3" />
+                <Icon aria-hidden strokeWidth={1.6} className="size-3" />
                 {label}
               </span>
               <span className="kicker tabular">スコア {hit.score.toFixed(2)}</span>

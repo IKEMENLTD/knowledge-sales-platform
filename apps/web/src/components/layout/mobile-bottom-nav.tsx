@@ -72,7 +72,7 @@ export function MobileBottomNav() {
                 {!primary && active ? <span aria-hidden className="nav-active-mark" /> : null}
                 <Icon
                   aria-hidden
-                  strokeWidth={primary ? 2.25 : 1.75}
+                  strokeWidth={primary ? 2 : 1.6}
                   className={cn(primary ? 'size-5' : 'size-[18px]')}
                 />
                 <span className={cn(primary && 'sr-only')}>{label}</span>

@@ -84,7 +84,7 @@ export default async function ContactsPage(props: {
 
       <section
         aria-label="ステータス別の名刺"
-        className="space-y-10 animate-fade-up [animation-delay:80ms]"
+        className="space-y-10 animate-fade-up [animation-delay:60ms]"
       >
         {total === 0 ? (
           <EmptyState query={q} />
@@ -247,7 +247,7 @@ function StatusBadge({ status }: { status: DemoContactStatus }) {
         className,
       )}
     >
-      <Icon aria-hidden strokeWidth={1.8} className="size-3" />
+      <Icon aria-hidden strokeWidth={1.6} className="size-3" />
       {CONTACT_STATUS_LABELS[status]}
     </span>
   );

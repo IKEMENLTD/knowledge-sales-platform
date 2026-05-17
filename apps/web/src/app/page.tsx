@@ -57,7 +57,7 @@ export default function HomePage() {
         </aside>
       </section>
 
-      <section className="mt-16 md:mt-24 grid grid-cols-1 md:grid-cols-3 border-y border-border divide-y md:divide-y-0 md:divide-x divide-border animate-fade-up [animation-delay:80ms]">
+      <section className="mt-16 md:mt-24 grid grid-cols-1 md:grid-cols-3 border-y border-border divide-y md:divide-y-0 md:divide-x divide-border animate-fade-up [animation-delay:60ms]">
         {[
           {
             no: '02',

@@ -448,7 +448,7 @@ export default async function MeetingsPage({
 
       <div className="hairline" aria-hidden />
 
-      <section aria-label="フィルタ" className="animate-fade-up [animation-delay:90ms] space-y-3">
+      <section aria-label="フィルタ" className="animate-fade-up [animation-delay:120ms] space-y-3">
         <div className="flex items-baseline gap-3">
           <span className="section-no text-base">{sectionNo(5)}</span>
           <h2 className="display text-lg font-semibold tracking-crisp">フィルタ</h2>
@@ -521,7 +521,7 @@ function SummaryStat({
         <span className="section-no text-base">{no}</span>
       </div>
       <div className="flex items-baseline gap-3">
-        <Icon aria-hidden strokeWidth={1.4} className="size-5 shrink-0 text-muted-foreground/60" />
+        <Icon aria-hidden strokeWidth={1.6} className="size-5 shrink-0 text-muted-foreground/60" />
         <p className="display tabular text-2xl font-semibold leading-none tracking-[-0.022em]">
           {metric}
         </p>

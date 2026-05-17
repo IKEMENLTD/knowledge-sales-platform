@@ -78,13 +78,13 @@ export default function AdminUsersPage() {
 
       <div className="hairline" aria-hidden />
 
-      <section aria-label="メンバー一覧" className="animate-fade-up [animation-delay:80ms]">
+      <section aria-label="メンバー一覧" className="animate-fade-up [animation-delay:60ms]">
         <Card className="overflow-hidden p-0">
           {/* desktop: table */}
           <table className="hidden md:table w-full text-sm">
             <caption className="sr-only">組織メンバーの一覧と役割・稼働状態</caption>
             <thead>
-              <tr className="text-left text-[11px] uppercase tracking-[0.16em] text-muted-foreground border-b border-border/60">
+              <tr className="text-left text-[11px] uppercase tracking-kicker text-muted-foreground border-b border-border/60">
                 <th scope="col" className="py-3 pl-5 pr-3 font-medium">
                   メンバー
                 </th>
@@ -222,9 +222,9 @@ function RoleBadge({ role }: { role: DemoRole }) {
       )}
     >
       {role === 'admin' ? (
-        <Crown aria-hidden strokeWidth={1.8} className="size-3" />
+        <Crown aria-hidden strokeWidth={1.6} className="size-3" />
       ) : role === 'manager' ? (
-        <ShieldCheck aria-hidden strokeWidth={1.8} className="size-3" />
+        <ShieldCheck aria-hidden strokeWidth={1.6} className="size-3" />
       ) : null}
       {ROLE_LABELS[role]}
     </span>
@@ -240,7 +240,7 @@ function StatusBadge({ status }: { status: DemoMember['status'] }) {
         cfg.className,
       )}
     >
-      <cfg.Icon aria-hidden strokeWidth={1.8} className="size-3" />
+      <cfg.Icon aria-hidden strokeWidth={1.6} className="size-3" />
       {cfg.label}
     </span>
   );

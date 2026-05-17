@@ -149,7 +149,7 @@ export function CommitmentsPanel({
                       )}
                     >
                       {done ? (
-                        <CheckSquare strokeWidth={1.8} className="size-4" />
+                        <CheckSquare strokeWidth={1.6} className="size-4" />
                       ) : (
                         <Square strokeWidth={1.6} className="size-4" />
                       )}
@@ -220,7 +220,7 @@ export function CommitmentsPanel({
                       )}
                     >
                       {done ? (
-                        <CheckSquare strokeWidth={1.8} className="size-4" />
+                        <CheckSquare strokeWidth={1.6} className="size-4" />
                       ) : (
                         <Square strokeWidth={1.6} className="size-4" />
                       )}

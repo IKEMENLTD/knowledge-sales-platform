@@ -38,21 +38,21 @@ export function RecordingProcessingCard({
         <div className="grid grid-cols-1 md:grid-cols-[260px_1fr]">
           <div className="relative bg-gradient-to-br from-foreground/85 to-foreground/65 dark:from-foreground/20 dark:to-foreground/10 p-5 md:p-6 text-background min-h-[160px] flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="tabular text-[10px] uppercase tracking-[0.16em] text-background/65">
+              <span className="tabular text-[10px] uppercase tracking-kicker text-background/65">
                 {(index + 1).toString().padStart(2, '0')}
               </span>
-              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.16em] text-background/75">
-                <Mic aria-hidden strokeWidth={1.8} className="size-3" />
+              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-kicker text-background/75">
+                <Mic aria-hidden strokeWidth={1.6} className="size-3" />
                 録画
               </span>
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-[10px] uppercase tracking-[0.16em] text-background/65">状態</p>
+              <p className="text-[10px] uppercase tracking-kicker text-background/65">状態</p>
               <p className="display text-sm font-semibold text-background flex items-center gap-2">
                 <Loader2
                   aria-hidden
-                  strokeWidth={1.8}
+                  strokeWidth={1.6}
                   className="size-4 animate-spin text-cinnabar"
                 />
                 {label}
@@ -78,7 +78,7 @@ export function RecordingProcessingCard({
             </div>
 
             <div className="text-right">
-              <p className="text-[10px] uppercase tracking-[0.16em] text-background/70">
+              <p className="text-[10px] uppercase tracking-kicker text-background/70">
                 {formatDateJp(recording.recordedAt, true)}
               </p>
             </div>
@@ -127,21 +127,21 @@ export function RecordingFailedCard({
       <div className="grid grid-cols-1 md:grid-cols-[260px_1fr]">
         <div className="relative bg-gradient-to-br from-cinnabar/70 to-cinnabar/55 p-5 md:p-6 text-cinnabar-foreground min-h-[160px] flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="tabular text-[10px] uppercase tracking-[0.16em] text-cinnabar-foreground/80">
+            <span className="tabular text-[10px] uppercase tracking-kicker text-cinnabar-foreground/80">
               {(index + 1).toString().padStart(2, '0')}
             </span>
-            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.16em] text-cinnabar-foreground/85">
-              <AlertCircle aria-hidden strokeWidth={1.8} className="size-3" />
+            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-kicker text-cinnabar-foreground/85">
+              <AlertCircle aria-hidden strokeWidth={1.6} className="size-3" />
               失敗
             </span>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-cinnabar-foreground/80">
+            <p className="text-[10px] uppercase tracking-kicker text-cinnabar-foreground/80">
               状態
             </p>
             <p className="display text-base font-semibold">処理に失敗しました</p>
           </div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-cinnabar-foreground/80">
+          <p className="text-[10px] uppercase tracking-kicker text-cinnabar-foreground/80">
             {formatDateJp(recording.recordedAt, true)}
           </p>
         </div>
@@ -179,7 +179,7 @@ export function RecordingFailedCard({
                 'hover:bg-cinnabar/15 focus-visible:outline-none focus-visible:shadow-focus-ring-cinnabar',
               )}
             >
-              <RotateCw aria-hidden strokeWidth={1.8} className="size-3.5" />
+              <RotateCw aria-hidden strokeWidth={1.6} className="size-3.5" />
               再実行
             </button>
           </form>

@@ -37,7 +37,7 @@ export function UploadResult({ items }: { items: QueueItem[] }) {
         >
           <AlertTriangle
             aria-hidden
-            strokeWidth={1.8}
+            strokeWidth={1.6}
             className="size-5 text-cinnabar mt-0.5 shrink-0"
           />
           <div className="space-y-2 min-w-0 flex-1">
@@ -75,7 +75,7 @@ export function UploadResult({ items }: { items: QueueItem[] }) {
           <div className="flex items-start gap-3">
             <CheckCircle2
               aria-hidden
-              strokeWidth={1.8}
+              strokeWidth={1.6}
               className="size-5 text-chitose mt-0.5 shrink-0"
             />
             <div className="space-y-2 min-w-0 flex-1">

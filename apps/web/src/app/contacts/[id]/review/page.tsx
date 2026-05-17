@@ -215,6 +215,15 @@ export default async function ContactReviewPage({
           />
         </>
       ) : null}
+
+      {/* UX Round1 Brand HIGH-B-03 fix: 落款 (inkan accent) — 詳細ページ末の編集的締め */}
+      <div className="flex justify-end pt-2">
+        <span
+          aria-hidden
+          className="inline-block size-3.5 rounded-[3px] bg-cinnabar/35"
+          title="落款"
+        />
+      </div>
     </div>
   );
 }

@@ -131,7 +131,7 @@ export function AiInsightsPanel({
             aria-hidden
             className="inline-flex items-center justify-center size-6 rounded-md bg-cinnabar/12 text-cinnabar"
           >
-            <Sparkles strokeWidth={1.8} className="size-3.5" />
+            <Sparkles strokeWidth={1.6} className="size-3.5" />
           </span>
           <p className="kicker">AI が読み解いたこと</p>
         </div>

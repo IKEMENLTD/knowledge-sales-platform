@@ -26,7 +26,7 @@ export function StepSample({ alreadyLoaded }: Props) {
         <div className="flex items-start gap-3">
           <Database
             aria-hidden
-            strokeWidth={1.4}
+            strokeWidth={1.6}
             className="size-6 shrink-0 mt-0.5 text-cinnabar"
           />
           <div className="flex-1">

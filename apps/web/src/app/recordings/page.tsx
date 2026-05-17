@@ -100,7 +100,7 @@ export default async function RecordingsPage({
       <section
         aria-label="録画の状態サマリ"
         aria-live="polite"
-        className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-up [animation-delay:40ms]"
+        className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-up [animation-delay:60ms]"
       >
         <KpiStat kicker="累計の長さ" metric={`${totalHours} 時間`} hint="完了済 + 処理中の合計" />
         <KpiStat
@@ -132,7 +132,7 @@ export default async function RecordingsPage({
         />
       </section>
 
-      <section aria-label="録画一覧" className="space-y-5 animate-fade-up [animation-delay:80ms]">
+      <section aria-label="録画一覧" className="space-y-5 animate-fade-up [animation-delay:60ms]">
         {visible.length === 0 ? (
           <EmptyState hasFilter={hasFilter} />
         ) : (
